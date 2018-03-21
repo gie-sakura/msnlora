@@ -65,6 +65,7 @@ def run(post_body,socket,mac):
     print("Entrada posthandler")
     #lora = LoRa(mode=LoRa.LORA)
     #loramac = binascii.hexlify(network.LoRa().mac())
+    dest_lora_address =""
     # PM: extracting data to be sent from passed POST body 
     blks = post_body.split("&")
     print(blks)
@@ -77,7 +78,7 @@ def run(post_body,socket,mac):
     loramac,sender, receiver, message=tbs.split(",")
     # AM: Revisando a donde enviar y enviando
     #dest_lora_address = reconocimiento(socket, receiver)
-    sent, retrans = swlpv3.tsend(aenvio, socket, loramac, message)
+    sent, retrans = swlpv3.tsend(tbs, socket, mac, message)
     if(dest_lora_address != ""):
         aenvio = str(sender)+","+str(message) # AM: cuando se tiene direccion de envio, envia ID del emisor y el mensaje
         sent, retrans = swlpv3.tsend(aenvio, socket, loramac, message)

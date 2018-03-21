@@ -154,7 +154,6 @@ class Server:
 
 # GET method
      if (request_method == 'GET') | (request_method == 'HEAD'):
-
     ## Load file content
          try:
              file_handler = open(file_requested,'rb')
@@ -208,7 +207,8 @@ class Server:
 
          server_response =  response_headers.encode() # return headers
          server_response +=  response_content  # return additional content
-
+         print("AM:")
+         print(server_response)
          s_left.send(server_response)
          print ("Closing connection with client")
          s_left.close()
@@ -226,7 +226,7 @@ class Server:
                 print(a)
                 s_left, addr = self.socket.accept()
                 self._wait_for_connections(s_left,addr)
-                time.sleep(4)
+                time.sleep(4) #AM: Retardo para cerrar conexiones http
             elif a == self.s_right:
                 # reading data from the LORA channel using swlpv3
                 print("in swlpv3.trecv")
