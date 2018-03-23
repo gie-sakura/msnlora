@@ -96,6 +96,8 @@ def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
     sent    = 0
     retrans = 0
     bandera = 0
+    flagn = 0
+    nsent = 0
     timeout_time    =  1    # 1 second
     estimated_rtt   = -1
     dev_rtt         =  1
@@ -151,7 +153,7 @@ def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
 
                     text    = payload[0:PAYLOAD_SIZE]   # Copying PAYLOAD_SIZE bytes header from the input string
                     payload = payload[PAYLOAD_SIZE:]    # Shifting the input string
-                    # Angel: Revisando si es el último ACK
+                    # AM: Revisando si es el último ACK
                     if last_pkt:
                         dentro= True
 
@@ -172,22 +174,24 @@ def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
                     send_time = time.time()
                     sent += 1 
                     if DEBUG_MODE: debug_printpacket("sending new packet", packet, True)
-
                 else:
                     if DEBUG_MODE: print("ERROR: packet received not valid")
                     raise socket.timeout
-
             except socket.timeout:
                 if DEBUG_MODE: print("EXCEPTION!! Socket timeout: ", time.time())
                 packet = make_packet(SND_ADDR, RCV_ADDR, seqnum, acknum, DATA_PACKET, last_pkt, text)
                 the_sock.send(packet)
+                flagn +=1
                 if DEBUG_MODE: debug_printpacket("re-sending packet: ", packet)
-
+                print(flagn)
                 sent += 1
                 retrans += 1
+                if(flagn==3):   #AM: Para no dejar el socket colgado se pone un reenvio de 3 paquetes
+                    dentro= True
+                    break
 
     print("RETURNING tsend")        
-    return(sent,retrans)
+    return(sent,retrans,sent)
 
 #
 #
@@ -263,6 +267,84 @@ def trecv(the_sock, MY_ADDR, SND_ADDR):
 
             if last_pkt:
                 break
+    the_sock.close()
+    return rcvd_data
 
+def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
+
+    # Shortening addresses to save space in packet
+    MY_ADDR = MY_ADDR[8:]
+    SND_ADDR = SND_ADDR[8:]
+    last_pkt = True
+
+    # Buffer storing the received data to be returned
+    rcvd_data = b""
+
+    next_acknum = 0
+    the_sock.settimeout(5)
+    while True:
+        try:
+            # Receive first packet
+            print(str(MY_ADDR))    
+            rat = machine.rng() & 0x05
+            time.sleep(rat)
+            #the_sock.setblocking(True)
+            packet = the_sock.recv(MAX_PKT_SIZE)
+            source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet) 
+            if (dest_addr==MY_ADDR) or (dest_addr==ANY_ADDR):
+                break
+            else: 
+                if DEBUG_MODE: debug_printpacket("DISCARDED received packet; not for me!!", packet)
+        except socket.timeout:
+            if DEBUG_MODE: print("EXCEPTION!! Socket timeout: ", time.time())
+            #the_sock.recv(MAX_PKT_SIZE)
+            break
+    if DEBUG_MODE: debug_printpacket("received 1st packet", packet, True)
+    checksum_OK = (check == get_checksum(content))
+    if (checksum_OK) and (next_acknum == acknum):
+        packet_valid = True
+        rcvd_data += content
+        next_acknum += 1
+    else: 
+        packet_valid = False
+
+    # Sending first ACK
+    ack_segment = make_packet(MY_ADDR, source_addr, seqnum, acknum, packet_valid, last_pkt, "")
+    the_sock.setblocking(False)
+    the_sock.send(ack_segment)
+    if DEBUG_MODE: debug_printpacket("sent 1st ACK", ack_segment)        
+
+    the_sock.settimeout(5)      # 5 seconds timeout.... LoRa is slow
+    if not last_pkt:
+        while True:
+            while True:
+                # Receive every other packet
+                the_sock.setblocking(True)
+                packet = the_sock.recv(MAX_PKT_SIZE)
+                source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet)
+                if (dest_addr==MY_ADDR):
+                    if DEBUG_MODE: debug_printpacket("received packet", packet, True)
+                    break
+                else: 
+                    if DEBUG_MODE: debug_printpacket("DISCARDED received packet; not for me!!", packet)
+
+            checksum_OK = (check == get_checksum(content))
+
+            # ACK the packet if it's correct; otherwise send NAK.
+            if (checksum_OK) and (next_acknum == acknum):
+                packet_valid = True
+                rcvd_data += content
+                next_acknum += 1
+            else: 
+                packet_valid = False
+
+            ack_segment = make_packet(MY_ADDR, source_addr, seqnum, acknum, packet_valid, last_pkt, "")
+            the_sock.setblocking(True)
+            the_sock.send(ack_segment)
+            if DEBUG_MODE: debug_printpacket("sending ACK", ack_segment)
+
+            if last_pkt:
+                break
+    the_sock.close()
     return rcvd_data
 

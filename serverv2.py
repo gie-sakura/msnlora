@@ -11,7 +11,7 @@ import ubinascii
 import binascii
 import posthandlerv3 # PM: code to be executed to handle a POST
 import swlpv3 #AM: Libreria transporte
-import tabla #AM: Libreria Bases de Usuarios y mensajes
+from tabla import BaseDatos #AM: Libreria Bases de Usuarios y mensajes
 from network import LoRa #AM: Libreria de LoRa
 import network
 import select #AM: Libreria para cambiar entre sockets
@@ -99,7 +99,7 @@ class Server:
          print("Warning: could not shut down the socket. Maybe it was already closed...", e)
 
 
- def _gen_headers(self,  code):
+ def _gen_headers(self, code):
      """ Generates HTTP response Headers. """
 
      # determine response code
@@ -120,10 +120,11 @@ class Server:
      return h
 
  def _wait_for_connections(self,s_left,addr):
+     #tabla = BaseDatos() #Instanciamiento Clase Base de Datos
      print("Got connection from:", addr)
      data = s_left.recv(1024) #receive data from client
      treq = bytes.decode(data) #decode it to treq
-         #determine request method  (HEAD and GET are supported) (PM: added support to POST )
+     #determine request method  (HEAD and GET are supported) (PM: added support to POST )
      request_method = treq.split(' ')[0]
      print ("Method: ", request_method)
      print ("Full HTTP message: -->")
@@ -188,6 +189,7 @@ class Server:
 	                 response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED</p><p>Python HTTP server</p></body></html>"
              elif (file_requested.find("tabla") != -1):
                  print("AM: Consulta mensajes")
+                 tabla=BaseDatos()
                  if (len(treqbody) > 0 ):
                      response_content = tabla.consulta(treqbody)
                  else:
@@ -199,6 +201,8 @@ class Server:
                  file_handler.close()
 
              response_headers = self._gen_headers( 200)
+             print("Cabecera Post")
+             print(response_headers)
          except Exception as e: #in case file was not found, generate 404 page
              print ("Warning, file not found. Serving response code 404\n", e)
              response_headers = self._gen_headers( 404)
@@ -247,7 +251,7 @@ def recepcionLoRa(data):
         if bandera == 1:
             sent, retrans = swlpv3.tsend(tbs, s, my_lora_address, IPlora)
     else:
-        mensaje = swlpv3.trecv(the_sock, my_lora_address, ANY_ADDR)
+        mensaje = swlpv3.trecvcontrol(the_sock, my_lora_address, ANY_ADDR)
         print("El mensaje")
         print(mensaje)
         if(mensaje !=b""):
@@ -256,8 +260,8 @@ def recepcionLoRa(data):
 ###################################################################################
 
 print ("Starting web server")
+tabla=BaseDatos() #Instanciamiento Clase Base de Datos
 s = Server(80)  # construct server object
-tabla=tabla.BaseDatos() #Instanciamiento Clase Base de Datos
 my_lora_address = binascii.hexlify(network.LoRa().mac())
 s.activate_server() # acquire the socket
 s.connectionLoRa()

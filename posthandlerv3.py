@@ -25,7 +25,7 @@ def make_subpacket(TipoMensaje, TipoPaquete, content):
     if TipoPaquete: Paquete = Paquete | (1<<0) #Falso para Audio, True para texto
     if TipoMensaje: Mensaje = Mensaje | (1<<0) # Falso para Control, True para Texto
 
-    header = struct.pack(HEADER_FORMAT, source_addr, Mensaje, Paquete)
+    header = struct.pack(HEADER_FORMAT, Mensaje, Paquete)
     return header + content
 
 # AM: Funcion para desempaquetar
@@ -40,6 +40,7 @@ def unpack(packet):
 def reconocimiento(the_sock, tbs):
     # AM: Envío paquete de reconocimiento para saber donde enviar mensaje
     mensaje = ""
+    cuenta = 0
     lora = LoRa(mode=LoRa.LORA)
     my_lora_address = binascii.hexlify(network.LoRa().mac())
     dest_lora_address = b'FFFFFFFFFFFFFFFF'
@@ -50,11 +51,12 @@ def reconocimiento(the_sock, tbs):
     while True:
         try:
             print("buscando")
-            sent, retrans = swlpv3.tsend(paquete, the_sock, my_lora_address, dest_lora_address)
-            mensaje = swlpv3.trecv(the_sock, my_lora_address, sender_lora_address)
-            TM, TP, content = unpack(mensaje)
+            sent, retrans,nsent = swlpv3.tsend(paquete, the_sock, my_lora_address, dest_lora_address)
+            mensaje = swlpv3.trecvcontrol(the_sock, my_lora_address, dest_lora_address)
+            #TM, TP, content = unpack(mensaje)
         except socket.timeout:
-            sent, retrans = swlpv3.tsend(paquete, the_sock, my_lora_address, dest_lora_address)
+            sent, retrans,nsent = swlpv3.tsend(paquete, the_sock, my_lora_address, dest_lora_address)
+            mensaje = swlpv3.trecvcontrol(the_sock, my_lora_address, dest_lora_address)
             cuenta+=1
             print(cuenta)
         if(cuenta==7 and mensaje == ""):
@@ -77,8 +79,8 @@ def run(post_body,socket,mac):
     print(tbs)
     loramac,sender, receiver, message=tbs.split(",")
     # AM: Revisando a donde enviar y enviando
-    #dest_lora_address = reconocimiento(socket, receiver)
-    sent, retrans = swlpv3.tsend(tbs, socket, mac, message)
+    dest_lora_address = reconocimiento(socket, receiver)
+    #sent, retrans,nsent = swlpv3.tsend(tbs, socket, mac, message)
     if(dest_lora_address != ""):
         aenvio = str(sender)+","+str(message) # AM: cuando se tiene direccion de envio, envia ID del emisor y el mensaje
         sent, retrans = swlpv3.tsend(aenvio, socket, loramac, message)
