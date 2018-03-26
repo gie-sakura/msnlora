@@ -9,10 +9,32 @@ class BaseDatos:
 	BaseU=[]
 
 	def ingresoRegistro(self,usuario): #AM: Registro de nuevo usuario
+		#user =""
+		#blks=[]
+		tbs="a"
+		blks = usuario.split("&")
+		for i in blks:
+			v = i.split("=")
+			tbs += ","+v[1]
+		print(tbs)
+		x=tbs.split(",")
+		print(x)
+		user=x[1]
+		print("User es")
+		print(user)
 		self.BaseU.append(usuario)
 		self.BaseM.append(usuario)
 		posicion=self.BaseU.index(usuario)
+		print("posicion")
+		print(posicion)
+		print("Base Usuarios")
+		print(self.BaseU)
 		self.BaseM[posicion]={}
+		r_content = "<h1>Registrado</h1>\n"
+		r_content += "<h1>"+user+"</h1>\n"
+		r_content += "<p><a href='/'>Back to home</a></p>\n"
+		return r_content
+
 	def ingreso(self,Emisor,destino,Mensaje): #AM: Funcion para ingresar datos cuando los recibe por primera vez
 		print(self.BaseM)
 		print(type(self.BaseM))

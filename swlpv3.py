@@ -271,11 +271,11 @@ def trecv(the_sock, MY_ADDR, SND_ADDR):
     return rcvd_data
 
 def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
-
+    flag_recv = False
     # Shortening addresses to save space in packet
     MY_ADDR = MY_ADDR[8:]
     SND_ADDR = SND_ADDR[8:]
-    last_pkt = True
+    #last_pkt = True
 
     # Buffer storing the received data to be returned
     rcvd_data = b""
@@ -284,7 +284,7 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
     the_sock.settimeout(5)
     while True:
         try:
-            # Receive first packet
+            # Receive any packet
             print(str(MY_ADDR))    
             rat = machine.rng() & 0x05
             time.sleep(rat)
@@ -292,6 +292,7 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
             packet = the_sock.recv(MAX_PKT_SIZE)
             source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet) 
             if (dest_addr==MY_ADDR) or (dest_addr==ANY_ADDR):
+                flag_recv = True
                 break
             else: 
                 if DEBUG_MODE: debug_printpacket("DISCARDED received packet; not for me!!", packet)
@@ -299,52 +300,46 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
             if DEBUG_MODE: print("EXCEPTION!! Socket timeout: ", time.time())
             #the_sock.recv(MAX_PKT_SIZE)
             break
-    if DEBUG_MODE: debug_printpacket("received 1st packet", packet, True)
-    checksum_OK = (check == get_checksum(content))
-    if (checksum_OK) and (next_acknum == acknum):
-        packet_valid = True
-        rcvd_data += content
-        next_acknum += 1
-    else: 
-        packet_valid = False
-
-    # Sending first ACK
-    ack_segment = make_packet(MY_ADDR, source_addr, seqnum, acknum, packet_valid, last_pkt, "")
-    the_sock.setblocking(False)
-    the_sock.send(ack_segment)
-    if DEBUG_MODE: debug_printpacket("sent 1st ACK", ack_segment)        
-
-    the_sock.settimeout(5)      # 5 seconds timeout.... LoRa is slow
-    if not last_pkt:
-        while True:
+    if(flag_recv==True):
+        if DEBUG_MODE: debug_printpacket("received 1st packet", packet, True)
+        checksum_OK = (check == get_checksum(content))
+        if (checksum_OK) and (next_acknum == acknum):
+            packet_valid = True
+            rcvd_data += content
+            next_acknum += 1
+        else: 
+            packet_valid = False
+        # Sending first ACK
+        ack_segment = make_packet(MY_ADDR, source_addr, seqnum, acknum, packet_valid, last_pkt, "")
+        the_sock.setblocking(False)
+        the_sock.send(ack_segment)
+        if DEBUG_MODE: debug_printpacket("sent 1st ACK", ack_segment)        
+        if not last_pkt:
             while True:
-                # Receive every other packet
-                the_sock.setblocking(True)
-                packet = the_sock.recv(MAX_PKT_SIZE)
-                source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet)
-                if (dest_addr==MY_ADDR):
-                    if DEBUG_MODE: debug_printpacket("received packet", packet, True)
-                    break
+                while True:
+                    # Receive every other packet
+                    the_sock.setblocking(True)
+                    packet = the_sock.recv(MAX_PKT_SIZE)
+                    source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet)
+                    if (dest_addr==MY_ADDR):
+                        if DEBUG_MODE: debug_printpacket("received packet", packet, True)
+                        break
+                    else: 
+                        if DEBUG_MODE: debug_printpacket("DISCARDED received packet; not for me!!", packet)
+                checksum_OK = (check == get_checksum(content))
+                # ACK the packet if it's correct; otherwise send NAK.
+                if (checksum_OK) and (next_acknum == acknum):
+                    packet_valid = True
+                    rcvd_data += content
+                    next_acknum += 1
                 else: 
-                    if DEBUG_MODE: debug_printpacket("DISCARDED received packet; not for me!!", packet)
-
-            checksum_OK = (check == get_checksum(content))
-
-            # ACK the packet if it's correct; otherwise send NAK.
-            if (checksum_OK) and (next_acknum == acknum):
-                packet_valid = True
-                rcvd_data += content
-                next_acknum += 1
-            else: 
-                packet_valid = False
-
-            ack_segment = make_packet(MY_ADDR, source_addr, seqnum, acknum, packet_valid, last_pkt, "")
-            the_sock.setblocking(True)
-            the_sock.send(ack_segment)
-            if DEBUG_MODE: debug_printpacket("sending ACK", ack_segment)
-
-            if last_pkt:
-                break
-    the_sock.close()
+                    packet_valid = False
+                ack_segment = make_packet(MY_ADDR, source_addr, seqnum, acknum, packet_valid, last_pkt, "")
+                the_sock.setblocking(True)
+                the_sock.send(ack_segment)
+                if DEBUG_MODE: debug_printpacket("sending ACK", ack_segment)
+                if last_pkt:
+                    break
+    #the_sock.close()
     return rcvd_data
 

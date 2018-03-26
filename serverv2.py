@@ -195,6 +195,15 @@ class Server:
                  else:
                      print("... PM: empty POST received")
                      response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED</p><p>Python HTTP server</p></body></html>"
+             if (file_requested.find("registro") != -1):
+                 print("AM: Registro")
+                 tabla=BaseDatos()
+                 if (len(treqbody) > 0 ):
+                     response_content = tabla.ingresoRegistro(treqbody)
+                     print("Registrado")
+                 else:
+                     print("... PM: empty POST received")
+                     response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED</p><p>Python HTTP server</p></body></html>"
              else:
                  file_handler = open(file_requested,'rb')
                  response_content = file_handler.read() # read file content
@@ -234,7 +243,7 @@ class Server:
             elif a == self.s_right:
                 # reading data from the LORA channel using swlpv3
                 print("in swlpv3.trecv")
-                data = swlpv3.trecv(self.s_right, my_lora_address, ANY_ADDR)
+                data = swlpv3.trecvcontrol(self.s_right, my_lora_address, ANY_ADDR)
                 recepcionLoRa(data)
                 print(data)
                 print("The End.")
