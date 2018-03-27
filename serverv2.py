@@ -30,8 +30,8 @@ nets = wlan.scan()
 ANY_ADDR = b'FFFFFFFF'
 
 for net in nets:
-    if net.ssid == 'AndroidAP':  # Kiyo: SSID y Password
-        wlan.connect(net.ssid, auth=(net.sec, 'kiyo0906'), timeout=5000)
+    if net.ssid == "Sakura-Cel":  # Kiyo: SSID y Password
+        wlan.connect(net.ssid, auth=(net.sec, 'f4202de489a7'), timeout=5000)
         print("Conectado")
         while not wlan.isconnected():
             machine.idle()
@@ -197,7 +197,7 @@ class Server:
                  else:
                      print("... PM: empty POST received")
                      response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED</p><p>Python HTTP server</p></body></html>"
-             if (file_requested.find("registro") != -1):
+             elif (file_requested.find("registro") != -1):
                  print("AM: Registro")
                  tabla=BaseDatos()
                  if (len(treqbody) > 0 ):
