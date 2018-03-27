@@ -6,9 +6,10 @@ import binascii
 import network
 import swlpv3
 import struct
+from tabla import BaseDatos #AM: Libreria Bases de Usuarios y mensajes
 
 ANY_ADDR = b'FFFFFFFFFFFFFFFF'
-MAX_PKT_SIZE_REC = 24  # Must determine which is the maximum pkt size in LoRa...
+MAX_PKT_SIZE_REC = 32  # Must determine which is the maximum pkt size in LoRa...
 HEADER_FORMAT = "BB"
 HEADER_SIZE = 2
 # header structure:
@@ -45,29 +46,39 @@ def reconocimiento(the_sock, tbs):
     lora = LoRa(mode=LoRa.LORA)
     my_lora_address = binascii.hexlify(network.LoRa().mac())
     dest_lora_address = b'FFFFFFFFFFFFFFFF'
-    content=str(my_lora_address)+","+str(tbs)
-    paquete = make_subpacket(False, True, content)
+    content=str(str(my_lora_address)+","+str(tbs))
+    print(content)
+    paquete = make_subpacket(0, 1, content)
+    #print(paquete)
     print('buscando a... '+tbs)
-    #the_sock.settimeout(3) # AM: Se establece un tiempo de búsqueda de usuario de 20 segundos
+    # AM: Se establece un tiempo de búsqueda de usuario de 20 segundos
     while True:
-        print("buscando "+cuenta)
+        print("buscando ")
+        print(cuenta)
         sent, retrans,nsent = swlpv3.tsend(paquete, the_sock, my_lora_address, dest_lora_address)
         mensaje = swlpv3.trecvcontrol(the_sock, my_lora_address, dest_lora_address)
-        print("mensaje "+mensaje)
+        print("mensaje ")
+        print(mensaje)
         #
         cuenta+=1
         print(cuenta)
         if(mensaje!=b""):
-            TM, TP, content = unpack(mensaje)
-        if(cuenta==7 or mensaje != b""):
+            #TM, TP, content = unpack(mensaje)
+            #mensaje =content
             break
-    return content
+        elif(cuenta==3 and mensaje==b""):
+            print("contenido")
+            print(content)
+            break
+    return mensaje
 
 def run(post_body,socket,mac):
+    tabla=BaseDatos()
     print("Entrada posthandler")
     #lora = LoRa(mode=LoRa.LORA)
     #loramac = binascii.hexlify(network.LoRa().mac())
-    dest_lora_address =""
+    #receiver = tabla.ingresoRegistro(post_body)
+    dest_lora_address =b""
     # PM: extracting data to be sent from passed POST body 
     blks = post_body.split("&")
     print(blks)
@@ -80,11 +91,16 @@ def run(post_body,socket,mac):
     loramac,sender, receiver, message=tbs.split(",")
     # AM: Revisando a donde enviar y enviando
     dest_lora_address = reconocimiento(socket, receiver)
+    print("dest lora address")
+    dest_lora_address2 = dest_lora_address[2:]
+    print(dest_lora_address2)
     #sent, retrans,nsent = swlpv3.tsend(tbs, socket, mac, message)
     if(dest_lora_address != b""):
-        aenvio = str(sender)+","+str(message) # AM: cuando se tiene direccion de envio, envia ID del emisor y el mensaje
-        sent, retrans = swlpv3.tsend(aenvio, socket, loramac, message)
-        BaseU, BaseM = tabla.BaseDatos.ingresoRegistro(sender)
+        aenvio = str(sender)+","+str(message)+","+str(receiver) # AM: cuando se tiene direccion de envio, envia ID del emisor y el mensaje
+        print("aenvio: "+aenvio)
+        sent, retrans,sent = swlpv3.tsend(aenvio, socket, mac, dest_lora_address)
+        print("Enviado")
+        #receiver = tabla.ingresoRegistro(sender)
         # PM: creating web page to be returned
         r_content = "<h1>Message sent via LoRa</h1>\n"
         r_content += "\n"
@@ -92,7 +108,5 @@ def run(post_body,socket,mac):
         r_content += "\n"
         r_content += "<p><a href='/'>Back to home</a></p>\n"
     else:
-        r_content = "<h1>Destino inalcanzable</h1>\n"
-        r_content += "\n"
-        r_content += "<p><a href='/'>Back to home</a></p>\n"
+        r_content = tabla.ingresoRegistro(post_body)
     return r_content

@@ -84,9 +84,12 @@ def timeout(signum, frame):
 def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
 
     # Shortening addresses to save space in packet
+    print("RCV_ADDR")
+    print(RCV_ADDR)
     SND_ADDR = SND_ADDR[8:]
     RCV_ADDR = RCV_ADDR[8:]
-
+    print("RCV_ADDR2")
+    print(RCV_ADDR)
     # identify session with a number between 0 and 255: NOT USED YET
     sessnum = machine.rng() & 0xFF  
 
@@ -113,12 +116,12 @@ def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
         bandera = 0 
 
     the_sock.setblocking(True)
-    packet = make_packet(SND_ADDR, ANY_ADDR, seqnum, acknum, DATA_PACKET, last_pkt, text)
+    packet = make_packet(SND_ADDR, RCV_ADDR, seqnum, acknum, DATA_PACKET, last_pkt, text)
     the_sock.send(packet)
     send_time = time.time()
     sent += 1
     if DEBUG_MODE: debug_printpacket("sending 1st", packet)
-    the_sock.settimeout(5)      # 5 seconds initial timeout.... LoRa is slow
+    the_sock.settimeout(7)      # 5 seconds initial timeout.... LoRa is slow
     dentro=False
     if not dentro:
         while True:

@@ -84,6 +84,7 @@ class Server:
  def connectionLoRa(self):#Funcion para crear socket LoRa
     try:
         self.s_right = socket.socket(socket.AF_LORA, socket.SOCK_RAW)
+        print(network.LoRa().mac())
         self.loramac = binascii.hexlify(network.LoRa().mac())
         print("socket creado") # AM: Adquisicion socket LoRa
     except socket.error:
@@ -154,7 +155,7 @@ class Server:
      print ("Serving web page [",file_requested,"]")
 
 # GET method
-     if (request_method == 'GET') | (request_method == 'HEAD'):
+     if (request_method == 'GET') | (request_method == 'HEAD') | (request_method == '(null)'):
     ## Load file content
          try:
              file_handler = open(file_requested,'rb')
@@ -182,8 +183,9 @@ class Server:
              if (file_requested.find("execposthandler") != -1):
                  print("... PM: running python code")
                  if (len(treqbody) > 0 ):
-                     print(treqbody)
                      response_content = posthandlerv3.run(treqbody,self.s_right,self.loramac)
+                     print("Response Content")
+                     print(response_content)
                  else:
 	                 print("... PM: empty POST received")
 	                 response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED</p><p>Python HTTP server</p></body></html>"
@@ -201,6 +203,7 @@ class Server:
                  if (len(treqbody) > 0 ):
                      response_content = tabla.ingresoRegistro(treqbody)
                      print("Registrado")
+                     print(response_content)
                  else:
                      print("... PM: empty POST received")
                      response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED</p><p>Python HTTP server</p></body></html>"
@@ -244,29 +247,48 @@ class Server:
                 # reading data from the LORA channel using swlpv3
                 print("in swlpv3.trecv")
                 data = swlpv3.trecvcontrol(self.s_right, my_lora_address, ANY_ADDR)
-                recepcionLoRa(data)
+                recepcionLoRa(data,self.s_right)
                 print(data)
                 print("The End.")
+###################################################################################
 
-###########################################################
-def recepcionLoRa(data):
+def recepcionLoRa(data,socket):
     mensaje = b""
     my_lora_address = binascii.hexlify(network.LoRa().mac())
     TM,TP, content = posthandlerv3.unpack(data)
     print(data)
-    if TP == False:
-        usuario,IPlora = content.split(",")
-        bandera=tabla.consultaControl(usuario)
+    print("Contenido en recepcion Lora")
+    print(content)
+    print(TP)
+    if TP == 1:
+        content2 = str(content)
+        IPlora,usuario = content2.split(",")
+        print("IP Lora: "+str(IPlora))
+        lenght = len(usuario)
+        userf = usuario[:lenght-1]
+        IPloraf = IPlora[4:]
+        print("usuario "+str(userf))
+        bandera=tabla.consultaControl(userf)
+        print("Bandera")
+        print(bandera)
         if bandera == 1:
-            sent, retrans = swlpv3.tsend(tbs, s, my_lora_address, IPlora)
+            #paquete = make_subpacket(False, True, )
+            print("En tsend"+str(IPloraf))
+            sent, retrans,sent = swlpv3.tsend(my_lora_address, socket, my_lora_address, IPloraf)
     else:
-        mensaje = swlpv3.trecvcontrol(the_sock, my_lora_address, ANY_ADDR)
-        print("El mensaje")
+        #mensaje = swlpv3.trecvcontrol(socket, my_lora_address, ANY_ADDR)
+        mensaje = data
+        print("El mensaje en serverv2")
         print(mensaje)
         if(mensaje !=b""):
-            idEmisor, mensajef = mensaje.split(",")
-            tabla.ingreso(idEmisor,usuario,mensaje)
-###################################################################################
+            mensajet = str(mensaje)
+            idEmisor, mensajef,usuario = mensajet.split(",")
+            print("Emisor: "+str(idEmisor))
+            print("Mensaje: "+str(mensajef))
+            print("Usuario: "+str(usuario))
+            lenght = len(usuario)
+            userf = usuario[:lenght-1]
+            tabla.ingreso(idEmisor,userf,mensaje)
 
 print ("Starting web server")
 tabla=BaseDatos() #Instanciamiento Clase Base de Datos
