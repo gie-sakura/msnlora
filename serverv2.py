@@ -4,13 +4,14 @@
 # PM: added POST handling
 # import signal  # Signal support (server shutdown on signal receive)
 # Kiyo: Agregado conexión a red local
+# AM: Agregado funcionamiento entre dos dispositivos
 
 import socket  # Networking support
 import time    # Current time
 import ubinascii
 import binascii
 import posthandlerv3 # PM: code to be executed to handle a POST
-import swlpv3 #AM: Libreria transporte
+import swlpv3 #AM: Libreria transporte no recursiva
 from tabla import BaseDatos #AM: Libreria Bases de Usuarios y mensajes
 from network import LoRa #AM: Libreria de LoRa
 import network
@@ -19,26 +20,15 @@ import select #AM: Libreria para cambiar entre sockets
 
 
 lora = LoRa(mode=LoRa.LORA) #Inicializando LoRa
-# Kiyo: Conexión Lopy a red local
 import machine
 from network import WLAN
 
-
+# Se configura la lopy como punto de Acceso y servidor HTTP
+wlan = WLAN(mode=WLAN.STA_AP,ssid='lopy2')
+wlan.init(mode=WLAN.STA_AP, ssid='lopy2', auth=(WLAN.WPA2,'www.lopy.io'), channel=7, antenna=WLAN.INT_ANT)
 flag = 0
-wlan = WLAN(mode=WLAN.STA)
-nets = wlan.scan()
-ANY_ADDR = b'FFFFFFFF'
-
-for net in nets:
-    if net.ssid == "Sakura-Cel":  # Kiyo: SSID y Password
-        wlan.connect(net.ssid, auth=(net.sec, 'f4202de489a7'), timeout=5000)
-        print("Conectado")
-        while not wlan.isconnected():
-            machine.idle()
-        break # Kiyo: Fin de conexión"""
-
 WEB_PAGES_HOME_DIR = '/flash' # Directory where webpage files are stored
-
+ANY_ADDR = b'FFFFFFFF'
 
 
 
@@ -50,6 +40,7 @@ class Server:
      self.host = ''   # <-- works on all avaivable network interfaces
      self.port = port
      self.www_dir =  WEB_PAGES_HOME_DIR
+     self.flag_null = 0
 
  def activate_server(self):
      """ Attempts to aquire the socket and launch the server """
@@ -121,17 +112,25 @@ class Server:
      return h
 
  def _wait_for_connections(self,s_left,addr):
-     #tabla = BaseDatos() #Instanciamiento Clase Base de Datos
      print("Got connection from:", addr)
      data = s_left.recv(1024) #receive data from client
      treq = bytes.decode(data) #decode it to treq
      #determine request method  (HEAD and GET are supported) (PM: added support to POST )
      request_method = treq.split(' ')[0]
+     print(self.flag_null)
+     if(self.flag_null==0):#AM: En caso de que sea peticion nula, la cambia a una GET
+        treq2 = treq
+        request_method2 = treq2.split(' ')[0]
+        print("Datos para metodo null")
+        self.flag_null = 1
+     if(request_method=="(null)"):
+        treq = treq2
+        request_method = request_method2
+        print("Cambio de datos porque se recibio peticion null")
      print ("Method: ", request_method)
      print ("Full HTTP message: -->")
      print (treq)
      print ("<--")
-
      treqhead = treq.split("\r\n\r\n")[0]
      treqbody = treq[len(treqhead):].lstrip() # PM: makes easier to handle various types of newlines
      print ("only the HTTP body: -->")
@@ -182,31 +181,30 @@ class Server:
          try:
              if (file_requested.find("execposthandler") != -1):
                  print("... PM: running python code")
-                 if (len(treqbody) > 0 ):
+                 print("len treqbody "+str(len(treqbody)))
+                 if (len(treqbody) > 0 | len(treqbody) > 37):
                      response_content = posthandlerv3.run(treqbody,self.s_right,self.loramac)
-                     print("Response Content")
-                     print(response_content)
                  else:
 	                 print("... PM: empty POST received")
-	                 response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED</p><p>Python HTTP server</p></body></html>"
+	                 response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED, Please Check Again</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
              elif (file_requested.find("tabla") != -1):
                  print("AM: Consulta mensajes")
                  tabla=BaseDatos()
-                 if (len(treqbody) > 0 ):
+                 if (len(treqbody) > 0 | len(treqbody) > 37):
                      response_content = tabla.consulta(treqbody)
                  else:
                      print("... PM: empty POST received")
-                     response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED</p><p>Python HTTP server</p></body></html>"
+                     response_content = b"<html><body><p>Error: EMPTY User Found</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
              elif (file_requested.find("registro") != -1):
                  print("AM: Registro")
                  tabla=BaseDatos()
-                 if (len(treqbody) > 0 ):
+                 if (len(treqbody) > 0 | len(treqbody) > 37):
                      response_content = tabla.ingresoRegistro(treqbody)
                      print("Registrado")
                      print(response_content)
                  else:
                      print("... PM: empty POST received")
-                     response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED</p><p>Python HTTP server</p></body></html>"
+                     response_content = b"<html><body><p>Error: EMPTY User Found</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
              else:
                  file_handler = open(file_requested,'rb')
                  response_content = file_handler.read() # read file content
@@ -295,5 +293,5 @@ tabla=BaseDatos() #Instanciamiento Clase Base de Datos
 s = Server(80)  # construct server object
 my_lora_address = binascii.hexlify(network.LoRa().mac())
 s.activate_server() # acquire the socket
-s.connectionLoRa()
+s.connectionLoRa() #Adquisicion Socket LoRa
 s.conexion()
