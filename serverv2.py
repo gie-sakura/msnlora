@@ -16,14 +16,20 @@ from tabla import BaseDatos #AM: Libreria Bases de Usuarios y mensajes
 from network import LoRa #AM: Libreria de LoRa
 import network
 import select #AM: Libreria para cambiar entre sockets
-
-
-
-lora = LoRa(mode=LoRa.LORA) #Inicializando LoRa
+import ufun #AM: Libreria para manejar los Leds
 import machine
 from network import WLAN
 
-# Se configura la lopy como punto de Acceso y servidor HTTP
+RED = 0xFF0000
+YELLOW = 0xFFFF33
+GREEN = 0x007F00
+PINK=0x6b007f
+BLUE= 0x005e63
+OFF = 0x000000
+
+lora = LoRa(mode=LoRa.LORA) #Inicializando LoRa
+
+# AM: Se configura la lopy como punto de Acceso y servidor HTTP
 wlan = WLAN(mode=WLAN.STA_AP,ssid='lopy2')
 wlan.init(mode=WLAN.STA_AP, ssid='lopy2', auth=(WLAN.WPA2,'www.lopy.io'), channel=7, antenna=WLAN.INT_ANT)
 flag = 0
@@ -41,6 +47,7 @@ class Server:
      self.port = port
      self.www_dir =  WEB_PAGES_HOME_DIR
      self.flag_null = 0
+     self.userR = ""
 
  def activate_server(self):
      """ Attempts to aquire the socket and launch the server """
@@ -113,7 +120,10 @@ class Server:
 
  def _wait_for_connections(self,s_left,addr):
      print("Got connection from:", addr)
+     ufun.set_led_to(GREEN)
      data = s_left.recv(1024) #receive data from client
+     print("Data")
+     print(data)
      treq = bytes.decode(data) #decode it to treq
      #determine request method  (HEAD and GET are supported) (PM: added support to POST )
      request_method = treq.split(' ')[0]
@@ -123,7 +133,7 @@ class Server:
         request_method2 = treq2.split(' ')[0]
         print("Datos para metodo null")
         self.flag_null = 1
-     if(request_method=="(null)"):
+     if(data=="b''"):
         treq = treq2
         request_method = request_method2
         print("Cambio de datos porque se recibio peticion null")
@@ -140,6 +150,8 @@ class Server:
          # split on space "GET /file.html" -into-> ('GET','file.html',...)
      file_requested = treq.split(' ')
      print(file_requested)
+     if(file_requested==''):
+        file_requested = '/index.html'
      file_requested = file_requested[1] # get 2nd element
 
          #Check for URL arguments. Disregard them
@@ -149,12 +161,11 @@ class Server:
              file_requested = '/index.html' # load index.html by default
      elif (file_requested == '/favicon.ico'):  # most browsers ask for this file...
              file_requested = '/index.html' # ...giving them index.html instead
-
      file_requested = self.www_dir + file_requested
      print ("Serving web page [",file_requested,"]")
 
 # GET method
-     if (request_method == 'GET') | (request_method == 'HEAD') | (request_method == '(null)'):
+     if (request_method == 'GET') | (request_method == 'HEAD') :
     ## Load file content
          try:
              file_handler = open(file_requested,'rb')
@@ -174,6 +185,7 @@ class Server:
              server_response +=  response_content  # return additional conten for GET only
          s_left.send(server_response)
          print ("Closing connection with client")
+         ufun.set_led_to(OFF)
          s_left.close()
 # POST method
      elif (request_method == 'POST'):
@@ -182,29 +194,30 @@ class Server:
              if (file_requested.find("execposthandler") != -1):
                  print("... PM: running python code")
                  print("len treqbody "+str(len(treqbody)))
-                 if (len(treqbody) > 0 | len(treqbody) > 37):
-                     response_content = posthandlerv3.run(treqbody,self.s_right,self.loramac)
+                 if (len(treqbody) > 25):
+                     response_content = posthandlerv3.run(treqbody,self.s_right,self.loramac,self.userR)
                  else:
 	                 print("... PM: empty POST received")
 	                 response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED, Please Check Again</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
              elif (file_requested.find("tabla") != -1):
                  print("AM: Consulta mensajes")
                  tabla=BaseDatos()
-                 if (len(treqbody) > 0 | len(treqbody) > 37):
-                     response_content = tabla.consulta(treqbody)
+                 if (len(treqbody) > 0):
+                     response_content = tabla.consulta(self.userR)
                  else:
                      print("... PM: empty POST received")
                      response_content = b"<html><body><p>Error: EMPTY User Found</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
              elif (file_requested.find("registro") != -1):
                  print("AM: Registro")
+                 print(str(len(treqbody)))
                  tabla=BaseDatos()
-                 if (len(treqbody) > 0 | len(treqbody) > 37):
-                     response_content = tabla.ingresoRegistro(treqbody)
+                 if (len(treqbody) > 12 ):
+                     response_content,self.userR = tabla.ingresoRegistro(treqbody)
                      print("Registrado")
                      print(response_content)
                  else:
                      print("... PM: empty POST received")
-                     response_content = b"<html><body><p>Error: EMPTY User Found</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
+                     response_content = b"<html><body><p>Error: Please Choose a username</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
              else:
                  file_handler = open(file_requested,'rb')
                  response_content = file_handler.read() # read file content
@@ -225,6 +238,7 @@ class Server:
          print(server_response)
          s_left.send(server_response)
          print ("Closing connection with client")
+         ufun.set_led_to(OFF)
          s_left.close()
 
      else:
@@ -244,10 +258,12 @@ class Server:
             elif a == self.s_right:
                 # reading data from the LORA channel using swlpv3
                 print("in swlpv3.trecv")
+                ufun.flash_led_to(YELLOW)
                 data = swlpv3.trecvcontrol(self.s_right, my_lora_address, ANY_ADDR)
                 recepcionLoRa(data,self.s_right)
                 print(data)
                 print("The End.")
+                ufun.flash_led_to(OFF)
 ###################################################################################
 
 def recepcionLoRa(data,socket):

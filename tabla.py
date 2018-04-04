@@ -29,10 +29,12 @@ class BaseDatos:
 		print("Base Usuarios")
 		print(self.BaseU)
 		self.BaseM[posicion]={}
-		r_content = "<h1>Registrado</h1>\n"
+		r_content='<head><meta charset="utf-8"><title>Register LoRa</title></head>\n'
+		r_content += "<body><h1>Registrado</h1>\n"
 		r_content += "<h1>"+user+"</h1>\n"
-		r_content += "<p><a href='/'>Back to home</a></p>\n"
-		return r_content
+		r_content += '<form action="" method="post"><div><label for="named">Destination:</label> <input type="text" id="named" name="dest_name"></div><div><label for="msg">Message:</label> <textarea id="msg" name="user_message"></textarea></div><div class="button"><button type="submit" onclick=this.form.action="execposthandler.html">Send your message</button></div><div class="button"><button type="submit" onclick=this.form.action="tabla.html">Check my messages</button></div>'
+		r_content += "<p><a href='/'>Back to home</a></p></body>\n"
+		return r_content,user
 
 	def ingreso(self,Emisor,destino,Mensaje): #AM: Funcion para ingresar datos cuando los recibe por primera vez
 		print("Entra a guardar el mensaje")
@@ -59,14 +61,14 @@ class BaseDatos:
 		else:
 			bandera = 0
 		return bandera
-	def consulta(self,post_body):
-		tbs="a"
-		blks = post_body.split("&")
-		for i in blks:
-			v = i.split("=")
-			tbs += ","+v[1]
-		x=tbs.split(",")
-		user=x[1]
+	def consulta(user):
+		#tbs="a"
+		#blks = post_body.split("&")
+		#for i in blks:
+		#	v = i.split("=")
+		#	tbs += ","+v[1]
+		#x=tbs.split(",")
+		#user=x[1]
 		print("Usuario: "+str(user))
 		BaseUConsulta = self.BaseU
 		print("Base U Consulta")

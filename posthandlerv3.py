@@ -6,6 +6,7 @@ import binascii
 import network
 import swlpv3
 import struct
+import ufun
 from tabla import BaseDatos #AM: Libreria Bases de Usuarios y mensajes
 
 ANY_ADDR = b'FFFFFFFFFFFFFFFF'
@@ -17,6 +18,12 @@ HEADER_SIZE = 2
 # 1B: Tipo de Paquete 
 PAYLOAD_SIZE = MAX_PKT_SIZE_REC - HEADER_SIZE
 DATA_PACKET = False
+RED = 0xFF0000
+YELLOW = 0xFFFF33
+GREEN = 0x007F00
+PINK=0x6b007f
+BLUE= 0x005e63
+OFF = 0x000000
 
 # Creacion subpaquete
 def make_subpacket(TipoMensaje, TipoPaquete, content):
@@ -72,9 +79,10 @@ def reconocimiento(the_sock, tbs):
             break
     return mensaje
 
-def run(post_body,socket,mac):
+def run(post_body,socket,mac,sender):
     tabla=BaseDatos()
     print("Entrada posthandler")
+    ufun.set_led_to(BLUE)
     #lora = LoRa(mode=LoRa.LORA)
     #loramac = binascii.hexlify(network.LoRa().mac())
     #receiver = tabla.ingresoRegistro(post_body)
@@ -88,7 +96,7 @@ def run(post_body,socket,mac):
         tbs += ","+v[1]
     print("tbs")
     print(tbs)
-    loramac,sender, receiver, message=tbs.split(",")
+    loramac, receiver, message=tbs.split(",")
     # AM: Revisando a donde enviar y enviando
     dest_lora_address = reconocimiento(socket, receiver)
     print("dest lora address")
@@ -100,6 +108,7 @@ def run(post_body,socket,mac):
         print("aenvio: "+aenvio)
         sent, retrans,sent = swlpv3.tsend(aenvio, socket, mac, dest_lora_address)
         print("Enviado")
+        ufun.set_led_to(OFF)
         #receiver = tabla.ingresoRegistro(sender)
         # PM: creating web page to be returned
         r_content = "<h1>Message sent via LoRa</h1>\n"
@@ -108,5 +117,7 @@ def run(post_body,socket,mac):
         r_content += "\n"
         r_content += "<p><a href='/'>Back to home</a></p>\n"
     else:
-        r_content = tabla.ingresoRegistro(post_body)
+        ufun.set_led_to(OFF)
+        r_content = "<h1>Destination Not found\n"
+        r_content += "<h1><a href='/'>Back</a></h1>\n"
     return r_content
