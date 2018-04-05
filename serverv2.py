@@ -26,7 +26,6 @@ GREEN = 0x007F00
 PINK=0x6b007f
 BLUE= 0x005e63
 OFF = 0x000000
-
 lora = LoRa(mode=LoRa.LORA) #Inicializando LoRa
 
 # AM: Se configura la lopy como punto de Acceso y servidor HTTP
