@@ -3,6 +3,12 @@ import sys
 import time
 from socket import *
 import swlpv3
+import os
+from machine import SD
+#import pickle
+
+DEBUG_MODE = True
+q=0
 
 class BaseDatos:
 	BaseM=[]
@@ -19,38 +25,43 @@ class BaseDatos:
 		x=tbs.split(",")
 		print(x)
 		user=x[1]
-		print("User es")
-		print(user)
-		self.BaseU.append(user)
-		self.BaseM.append(user)
-		posicion=self.BaseU.index(user)
-		print("posicion")
-		print(posicion)
-		print("Base Usuarios")
-		print(self.BaseU)
+		if DEBUG_MODE: print("DEBUG: User: ", user)
+		if user in self.BaseU:
+			posicion=self.BaseU.index(user)
+		else:
+			self.BaseU.append(user)
+			self.BaseM.append(user)
+			posicion=self.BaseU.index(user)
+			x = save_backup(self.BaseU,self.BaseM)	
+		if DEBUG_MODE: print("DEBUG: Position: ", posicion)
+		if DEBUG_MODE: print("DEBUG: User Database: ", self.BaseU)
 		self.BaseM[posicion]={}
-		r_content='<head><meta charset="utf-8"><title>Register LoRa</title></head>\n'
-		r_content += "<body><h1>Registrado</h1>\n"
+		r_content='<head><meta charset="utf-8"><title>Register LoRa</title>\n'
+		r_content +='<style type="text/less">\n'
+		r_content +=".dropdown-toggle {display:none;}\n"
+		r_content +=".dropdown-menu {display:none;}\n"
+		r_content +="</style>\n"
+		r_content +="</head>\n"
+		r_content += "<body><h1>Welcome</h1>\n"
 		r_content += "<h1>"+user+"</h1>\n"
-		r_content += '<form action="" method="post"><div><label for="named">Destination:</label> <input type="text" id="named" name="dest_name"></div><div><label for="msg">Message:</label> <textarea id="msg" name="user_message"></textarea></div><div class="button"><button type="submit" onclick=this.form.action="execposthandler.html">Send your message</button></div><div class="button"><button type="submit" onclick=this.form.action="tabla.html">Check my messages</button></div>'
+		r_content += '<form class="form-horizontal well" action="" method="post"><div><label for="named">Destination:</label><input type="text" id="named" name="dest_name"></div><div><label for="msg">Message:</label> <textarea id="msg" name="user_message"></textarea></div><div class="button"><button type="submit" onclick=this.form.action="execposthandler.html";document.getElementById("oculto").style.visibility="visible">Send your message</button></div><div class="button"><button type="submit" onclick=this.form.action="tabla.html">Check my messages</button></div>'
+		r_content += '<div id="oculto" style="visibility:hidden">Sending...</div>'
 		r_content += "<p><a href='/'>Back to home</a></p></body>\n"
 		return r_content,user
 
 	def ingreso(self,Emisor,destino,Mensaje): #AM: Funcion para ingresar datos cuando los recibe por primera vez
 		print("Entra a guardar el mensaje")
-		print(self.BaseM)
-		print(self.BaseU)
-		print(type(self.BaseM))
+		if DEBUG_MODE: print("DEBUG: Message Database: ", self.BaseM)
+		if DEBUG_MODE: print("DEBUG: User Database: ", self.BaseU)
 		posicion=self.BaseU.index(destino)
-		print(posicion)
-		self.BaseM[posicion]["Emisor "+str(self.n)+": "]=Emisor
-		self.BaseM[posicion]["Mensaje "+str(self.n)+": "]=Mensaje
+		if DEBUG_MODE: print("DEBUG: Position: ", posicion)
+		self.BaseM[posicion]["Emisor "+str(self.n)]=Emisor
+		self.BaseM[posicion]["Mensaje "+str(self.n)]=Mensaje
 		self.n+=1
-		print("lista de envios")
-		print(self.BaseU)
-		print("Lista de Mensajes")
-		print(self.BaseM)
-		print(self.n)
+		if DEBUG_MODE: print("DEBUG: New Users Database: ", self.BaseU)
+		if DEBUG_MODE: print("DEBUG: New Message Database: ", self.BaseU)
+		if DEBUG_MODE: print("DEBUG: Number of Message: ", self.n)
+
 	def consultaControl(self,destino):
 		BaseUsuarios = self.BaseU
 		print("Base Usuarios")
@@ -61,18 +72,11 @@ class BaseDatos:
 		else:
 			bandera = 0
 		return bandera
+
 	def consulta(user):
-		#tbs="a"
-		#blks = post_body.split("&")
-		#for i in blks:
-		#	v = i.split("=")
-		#	tbs += ","+v[1]
-		#x=tbs.split(",")
-		#user=x[1]
-		print("Usuario: "+str(user))
+		if DEBUG_MODE: print("DEBUG: User: ", user)
 		BaseUConsulta = self.BaseU
-		print("Base U Consulta")
-		print(BaseUConsulta)
+		if DEBUG_MODE: print("DEBUG: User Database: ", self.BaseUConsulta)
 		BaseMConsulta = self.BaseM
 
 		if user in BaseUConsulta:
@@ -84,9 +88,35 @@ class BaseDatos:
 			r_content += "\n"
 			r_content += "<p><a href='/'>Back to home</a></p>\n"
 		else:
-			ingresoRegistro(sender)
 			r_content = "<h1>No Messages</h1>\n"
 			r_content += "\n"
 			r_content += "\n"
 			r_content += "<p><a href='/'>Back to home</a></p>\n"
 		return r_content
+################################################################################################################
+#Management of the data in the SD Card
+def save_backup(DBU,DBM):
+	global q
+	#sd = SD()
+	#os.mount(sd, '/sd')
+	#print("SD Card Enabled")
+	f = open('/sd/DatabaseU'+str(q)+'.txt', 'w')
+	f.write(str(DBU))
+	f.close()
+	f = open('/sd/DatabaseM'+str(q)+'.txt', 'w')
+	f.write(str(DBM))
+	f.close()
+	print("Databases Saved")
+	q+=1
+	return q
+
+def open_backup(a):
+	f = open('/sd/DatabaseU'+str(a-1)+'users.txt', 'r')
+	dataUser = f.readall()
+	f.close()
+	listaUser = eval(dataUser)
+	f = open('/sd/DatabaseM'+str(a-1)+'users.txt', 'r')
+	dataMess = f.readall()
+	f.close()
+	listaMess = eval(dataMess)
+	return listaUser,listaMess

@@ -22,7 +22,7 @@ DEBUG_MODE = True
 # BEGIN: Utility functions
 #
 
-MAX_PKT_SIZE = 128  # Must determine which is the maximum pkt size in LoRa...
+MAX_PKT_SIZE = 255  # Must determine which is the maximum pkt size in LoRa...
 HEADER_FORMAT = "!8s8sHHB3s"
 HEADER_SIZE = 24
 # header structure:
@@ -142,7 +142,7 @@ def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
                 if ack_final: break 
 
                 # If valid, here we go!
-                if ack_is_ack and (ack_acknum == acknum)and(rcv2==ack_source_addr):
+                if (ack_is_ack) and (ack_acknum == acknum)and(rcv2==ack_source_addr):
 
                     # RTT calculations
                     sample_rtt = recv_time - send_time
@@ -214,7 +214,7 @@ def trecv(the_sock, MY_ADDR, SND_ADDR):
         # Receive first packet
         print(str(MY_ADDR))    
         rat = machine.rng() & 0x05
-        time.sleep(rat)
+        #time.sleep(rat)
         the_sock.setblocking(True)
         packet = the_sock.recv(MAX_PKT_SIZE)
         source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet) 
@@ -278,6 +278,7 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
     # Shortening addresses to save space in packet
     MY_ADDR = MY_ADDR[8:]
     SND_ADDR = SND_ADDR[8:]
+    address_check = b""
     #last_pkt = True
 
     # Buffer storing the received data to be returned
@@ -288,12 +289,11 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
     while True:
         try:
             # Receive any packet
-            print(str(MY_ADDR))    
-            rat = machine.rng() & 0x05
-            time.sleep(rat)
-            #the_sock.setblocking(True)
+            #if DEBUG_MODE: debug_printpacket("Mi direccion", MY_ADDR)
+            print(MY_ADDR)
             packet = the_sock.recv(MAX_PKT_SIZE)
-            source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet) 
+            source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet)
+            address_check = dest_addr 
             if (dest_addr==MY_ADDR) or (dest_addr==ANY_ADDR):
                 flag_recv = True
                 break
@@ -344,5 +344,5 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
                 if last_pkt:
                     break
     #the_sock.close()
-    return rcvd_data
+    return rcvd_data, address_check
 

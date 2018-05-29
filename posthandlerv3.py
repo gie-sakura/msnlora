@@ -24,6 +24,7 @@ GREEN = 0x007F00
 PINK=0x6b007f
 BLUE= 0x005e63
 OFF = 0x000000
+DEBUG_MODE = True
 
 # Creacion subpaquete
 def make_subpacket(TipoMensaje, TipoPaquete, content):
@@ -50,20 +51,19 @@ def reconocimiento(the_sock, tbs):
     mensaje = ""
     content= ""
     cuenta = 0
+    address = b""
     lora = LoRa(mode=LoRa.LORA)
     my_lora_address = binascii.hexlify(network.LoRa().mac())
     dest_lora_address = b'FFFFFFFFFFFFFFFF'
     content=str(str(my_lora_address)+","+str(tbs))
-    print(content)
-    paquete = make_subpacket(0, 1, content)
-    #print(paquete)
-    print('buscando a... '+tbs)
+    if DEBUG_MODE: print("DEBUG: Content: ", content)
+    if DEBUG_MODE: print("DEBUG: Searching: ", tbs)
     # AM: Se establece un tiempo de búsqueda de usuario de 20 segundos
     while True:
         print("buscando ")
         print(cuenta)
-        sent, retrans,nsent = swlpv3.tsend(paquete, the_sock, my_lora_address, dest_lora_address)
-        mensaje = swlpv3.trecvcontrol(the_sock, my_lora_address, dest_lora_address)
+        sent,retrans,nsent = swlpv3.tsend(content, the_sock, my_lora_address, dest_lora_address)
+        mensaje,address = swlpv3.trecvcontrol(the_sock, my_lora_address, dest_lora_address)
         print("mensaje ")
         print(mensaje)
         #
@@ -74,8 +74,8 @@ def reconocimiento(the_sock, tbs):
             #mensaje =content
             break
         elif(cuenta==3 and mensaje==b""):
-            print("contenido")
-            print(content)
+            print("El mensaje")
+            print(mensaje)
             break
     return mensaje
 
@@ -83,9 +83,6 @@ def run(post_body,socket,mac,sender):
     tabla=BaseDatos()
     print("Entrada posthandler")
     ufun.set_led_to(BLUE)
-    #lora = LoRa(mode=LoRa.LORA)
-    #loramac = binascii.hexlify(network.LoRa().mac())
-    #receiver = tabla.ingresoRegistro(post_body)
     dest_lora_address =b""
     # PM: extracting data to be sent from passed POST body 
     blks = post_body.split("&")
@@ -104,10 +101,13 @@ def run(post_body,socket,mac,sender):
     print(dest_lora_address2)
     #sent, retrans,nsent = swlpv3.tsend(tbs, socket, mac, message)
     if(dest_lora_address != b""):
+        start_time = time()
         aenvio = str(sender)+","+str(message)+","+str(receiver) # AM: cuando se tiene direccion de envio, envia ID del emisor y el mensaje
         print("aenvio: "+aenvio)
         sent, retrans,sent = swlpv3.tsend(aenvio, socket, mac, dest_lora_address)
         print("Enviado")
+        elapsed_time = time() - start_time
+        print("Tiempo de Envio: %0.10f seconds." % elapsed_time)
         ufun.set_led_to(OFF)
         #receiver = tabla.ingresoRegistro(sender)
         # PM: creating web page to be returned
@@ -119,5 +119,5 @@ def run(post_body,socket,mac,sender):
     else:
         ufun.set_led_to(OFF)
         r_content = "<h1>Destination Not found\n"
-        r_content += "<h1><a href='/'>Back</a></h1>\n"
+        r_content += "<h1><a href='/'>Back To Home</a></h1>\n"
     return r_content
