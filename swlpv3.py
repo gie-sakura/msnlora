@@ -22,7 +22,7 @@ DEBUG_MODE = True
 # BEGIN: Utility functions
 #
 
-MAX_PKT_SIZE = 255  # Must determine which is the maximum pkt size in LoRa...
+MAX_PKT_SIZE = 230  # Must determine which is the maximum pkt size in LoRa with Spread Factor 7...
 HEADER_FORMAT = "!8s8sHHB3s"
 HEADER_SIZE = 24
 # header structure:
@@ -290,7 +290,8 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
         try:
             # Receive any packet
             #if DEBUG_MODE: debug_printpacket("Mi direccion", MY_ADDR)
-            print(MY_ADDR)
+            if DEBUG_MODE: print("DEBUG: From Swlpv3 My Address: ", MY_ADDR)
+            #print(MY_ADDR)
             packet = the_sock.recv(MAX_PKT_SIZE)
             source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet)
             address_check = dest_addr 

@@ -22,6 +22,7 @@ from network import WLAN
 from machine import SD
 import gc
 import os
+import utime
 
 
 RED = 0xFF0000
@@ -118,7 +119,7 @@ class Server:
      print("Got connection from:", addr)
      ufun.set_led_to(GREEN)
      data = s_left.recv(1024) #receive data from client
-     if DEBUG_MODE: print("DEBUG: RAW INPUT DATA: ", data)
+     #if DEBUG_MODE: print("DEBUG: RAW INPUT DATA: ", data)
      treq = bytes.decode(data) #decode it to treq
      #determine request method  (HEAD and GET are supported) (PM: added support to POST )
      request_method = treq.split(' ')[0]
@@ -194,10 +195,17 @@ class Server:
      elif (request_method == 'POST'):
              ## Load file content
          try:
+             total_time= utime.ticks_ms()
              if (file_requested.find("execposthandler") != -1):
                  print("... PM: running python code")
+                 #total_time= utime.ticks_ms()
+                 if DEBUG_MODE: print("DEBUG: lenght message:",len(treqbody))
                  if (len(treqbody) > 25):
-                     response_content = posthandlerv3.run(treqbody,self.s_right,self.loramac,self.userR)
+                     response_content, search_time = posthandlerv3.run(treqbody,self.s_right,self.loramac,self.userR)
+                     total_time_final = utime.ticks_ms() - total_time
+                     stt = total_time_final - search_time
+                     if DEBUG_MODE: print("DEBUG: Total Time:",total_time_final)
+                     if DEBUG_MODE: print("DEBUG: STT:",stt)
                  else:
 	                 print("... PM: empty POST received")
 	                 response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED, Please Check Again</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
@@ -219,12 +227,10 @@ class Server:
                  response_content = file_handler.read() # read file content
                  file_handler.close()
 
-             response_headers = self._gen_headers( 200)
-             #print("Cabecera Post")
-             #print(response_headers)
+             response_headers = self._gen_headers(200)
          except Exception as e: #in case file was not found, generate 404 page
              print ("Warning, file not found. Serving response code 404\n", e)
-             response_headers = self._gen_headers( 404)
+             response_headers = self._gen_headers(404)
              response_content = b"<html><body><p>Error 404: File not found</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
 
          server_response =  response_headers.encode() # return headers
@@ -264,7 +270,6 @@ def LoRaRec(data,socket,source_address):
     mensaje = b""
     my_lora_address = binascii.hexlify(network.LoRa().mac())
     print("DEBUG: Content in reception LoRa",data)
-    #print(data)
     print(source_address)
     if (source_address == ANY_ADDR):
         content2 = str(data)
@@ -303,11 +308,13 @@ sd = SD()
 os.mount(sd, '/sd')
 print("SD Card Enabled")
 lora = LoRa(mode=LoRa.LORA) #Inicializando LoRa
+lora.sf(7)# Set Spread Factor
 # AM: Se configura la lopy como punto de Acceso y servidor HTTP
 # PM: choosing random name for lopy
 lopy_name = "messenger"+str(ufun.random_in_range())
 wlan = WLAN(mode=WLAN.STA_AP, ssid=lopy_name)
 wlan.init(mode=WLAN.STA_AP, ssid=lopy_name, auth=None, channel=7, antenna=WLAN.INT_ANT)
+print("Red Name: "+str(lopy_name))
 print ("Starting web server")
 tabla=BaseDatos() #Instanciamiento Clase Base de Datos
 s = Server(80)  # construct server object

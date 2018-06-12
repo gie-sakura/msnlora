@@ -14,6 +14,7 @@ class BaseDatos:
 	BaseM=[]
 	BaseU=[]
 	n=0
+	message_number = 0
 
 	def ingresoRegistro(self,usuario): #AM: Registro de nuevo usuario
 		tbs="a"
@@ -23,7 +24,8 @@ class BaseDatos:
 			tbs += ","+v[1]
 		print(tbs)
 		x=tbs.split(",")
-		print(x)
+		if DEBUG_MODE: print("DEBUG: data from the form: ", x)
+		#print(x)
 		user=x[1]
 		if DEBUG_MODE: print("DEBUG: User: ", user)
 		if user in self.BaseU:
@@ -31,8 +33,7 @@ class BaseDatos:
 		else:
 			self.BaseU.append(user)
 			self.BaseM.append(user)
-			posicion=self.BaseU.index(user)
-			x = save_backup(self.BaseU,self.BaseM)	
+			posicion=self.BaseU.index(user)	
 		if DEBUG_MODE: print("DEBUG: Position: ", posicion)
 		if DEBUG_MODE: print("DEBUG: User Database: ", self.BaseU)
 		self.BaseM[posicion]={}
@@ -59,8 +60,14 @@ class BaseDatos:
 		self.BaseM[posicion]["Mensaje "+str(self.n)]=Mensaje
 		self.n+=1
 		if DEBUG_MODE: print("DEBUG: New Users Database: ", self.BaseU)
-		if DEBUG_MODE: print("DEBUG: New Message Database: ", self.BaseU)
+		if DEBUG_MODE: print("DEBUG: New Message Database: ", self.BaseM)
 		if DEBUG_MODE: print("DEBUG: Number of Message: ", self.n)
+		self.message_number+=1
+		if(self.message_number==10):
+			print("Saving Databases")
+			x = save_backup(self.BaseU,self.BaseM)
+			self.message_number=0
+
 
 	def consultaControl(self,destino):
 		BaseUsuarios = self.BaseU
@@ -73,15 +80,14 @@ class BaseDatos:
 			bandera = 0
 		return bandera
 
-	def consulta(user):
+	def consulta(self,user):
 		if DEBUG_MODE: print("DEBUG: User: ", user)
 		BaseUConsulta = self.BaseU
-		if DEBUG_MODE: print("DEBUG: User Database: ", self.BaseUConsulta)
+		if DEBUG_MODE: print("DEBUG: User Database: ", BaseUConsulta)
 		BaseMConsulta = self.BaseM
-
-		if user in BaseUConsulta:
-			posicion=BaseUConsulta.index(user)
-			print(str(BaseMConsulta[posicion]))
+		posicion=BaseUConsulta.index(user)
+		if DEBUG_MODE: print("DEBUG: Messages: ", BaseMConsulta[posicion])
+		if (BaseMConsulta[posicion]!={}):
 			r_content = "<h1>Messages sent via LoRa</h1>\n"
 			r_content += "\n"
 			r_content += str(BaseMConsulta[posicion]) + "\n"

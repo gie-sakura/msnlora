@@ -1,13 +1,14 @@
 from network import LoRa
 import socket
 import machine
-import time
+from time import time    # Current time
 import binascii
 import network
 import swlpv3
 import struct
 import ufun
 from tabla import BaseDatos #AM: Libreria Bases de Usuarios y mensajes
+import utime
 
 ANY_ADDR = b'FFFFFFFFFFFFFFFF'
 MAX_PKT_SIZE_REC = 32  # Must determine which is the maximum pkt size in LoRa...
@@ -60,28 +61,24 @@ def reconocimiento(the_sock, tbs):
     if DEBUG_MODE: print("DEBUG: Searching: ", tbs)
     # AM: Se establece un tiempo de búsqueda de usuario de 20 segundos
     while True:
-        print("buscando ")
-        print(cuenta)
+        if DEBUG_MODE: print("DEBUG: Searching: ", cuenta)
         sent,retrans,nsent = swlpv3.tsend(content, the_sock, my_lora_address, dest_lora_address)
         mensaje,address = swlpv3.trecvcontrol(the_sock, my_lora_address, dest_lora_address)
-        print("mensaje ")
-        print(mensaje)
-        #
+        if DEBUG_MODE: print("DEBUG: Message: ", mensaje)
+        if DEBUG_MODE: print("DEBUG: Retransmisions",retrans)
         cuenta+=1
-        print(cuenta)
         if(mensaje!=b""):
             #TM, TP, content = unpack(mensaje)
             #mensaje =content
             break
         elif(cuenta==3 and mensaje==b""):
-            print("El mensaje")
-            print(mensaje)
+            if DEBUG_MODE: print("DEBUG: Message when destination not found: ", mensaje)
             break
     return mensaje
 
 def run(post_body,socket,mac,sender):
     tabla=BaseDatos()
-    print("Entrada posthandler")
+    print("Posthandler")
     ufun.set_led_to(BLUE)
     dest_lora_address =b""
     # PM: extracting data to be sent from passed POST body 
@@ -91,25 +88,27 @@ def run(post_body,socket,mac,sender):
     for i in blks:
         v = i.split("=")
         tbs += ","+v[1]
-    print("tbs")
-    print(tbs)
+    if DEBUG_MODE: print("DEBUG: tbs: ", tbs)
     loramac, receiver, message=tbs.split(",")
     # AM: Revisando a donde enviar y enviando
+    start_search_time = utime.ticks_ms()
     dest_lora_address = reconocimiento(socket, receiver)
-    print("dest lora address")
+    search_time = utime.ticks_ms() - start_search_time
     dest_lora_address2 = dest_lora_address[2:]
-    print(dest_lora_address2)
-    #sent, retrans,nsent = swlpv3.tsend(tbs, socket, mac, message)
+    if DEBUG_MODE: print("DEBUG: dest lora address: ", dest_lora_address2)
+    if DEBUG_MODE: print("DEBUG: Search Destination time: %0.10f mseconds."% search_time)
+    print("DEBUG: Search Destination time: %0.10f mseconds."% search_time)
     if(dest_lora_address != b""):
-        start_time = time()
+        start_time = utime.ticks_ms()
         aenvio = str(sender)+","+str(message)+","+str(receiver) # AM: cuando se tiene direccion de envio, envia ID del emisor y el mensaje
         print("aenvio: "+aenvio)
         sent, retrans,sent = swlpv3.tsend(aenvio, socket, mac, dest_lora_address)
-        print("Enviado")
-        elapsed_time = time() - start_time
-        print("Tiempo de Envio: %0.10f seconds." % elapsed_time)
+        elapsed_time = utime.ticks_ms() - start_time
+        print("Sent")
+        if DEBUG_MODE: print("DEBUG: Sent OK, Message time: %0.10f mseconds."% elapsed_time)
+        if DEBUG_MODE: print("DEBUG: Retransmisions",retrans)
+        if DEBUG_MODE: print("DEBUG: Segments sent:",sent)
         ufun.set_led_to(OFF)
-        #receiver = tabla.ingresoRegistro(sender)
         # PM: creating web page to be returned
         r_content = "<h1>Message sent via LoRa</h1>\n"
         r_content += "\n"
@@ -120,4 +119,4 @@ def run(post_body,socket,mac,sender):
         ufun.set_led_to(OFF)
         r_content = "<h1>Destination Not found\n"
         r_content += "<h1><a href='/'>Back To Home</a></h1>\n"
-    return r_content
+    return r_content, search_time
