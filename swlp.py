@@ -84,12 +84,14 @@ def timeout(signum, frame):
 def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
 
     # Shortening addresses to save space in packet
-    print("RCV_ADDR")
-    print(RCV_ADDR)
+    if DEBUG_MODE: print("RCV_ADDR", RCV_ADDR)
+    #print("RCV_ADDR")
+    #print(RCV_ADDR)
     SND_ADDR = SND_ADDR[8:]
     RCV_ADDR = RCV_ADDR[8:]
-    print("RCV_ADDR2")
-    print(RCV_ADDR)
+    if DEBUG_MODE: print("New RCV_ADDR", RCV_ADDR)
+    #print("RCV_ADDR2")
+    #print(RCV_ADDR)
     # identify session with a number between 0 and 255: NOT USED YET
     sessnum = machine.rng() & 0xFF  
 
@@ -128,7 +130,7 @@ def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
             try:
 
                 # waiting for a ack
-                print(str(SND_ADDR))
+                if DEBUG_MODE: print("SND_ADDR", SND_ADDR)
                 ack = the_sock.recv(HEADER_SIZE)
                 recv_time = time.time()
 
@@ -167,7 +169,6 @@ def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
                         last_pkt = True
                         bandera = 0
 
-
                     # Increment sequence and ack numbers
                     seqnum += 1
                     acknum += 1
@@ -186,7 +187,7 @@ def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
                 the_sock.send(packet)
                 flagn +=1
                 if DEBUG_MODE: debug_printpacket("re-sending packet: ", packet)
-                print(flagn)
+                if DEBUG_MODE: print("From Swlp Flag Number: ", flagn)
                 sent += 1
                 retrans += 1
                 if(flagn==3):   #AM: Para no dejar el socket colgado se pone un reenvio de 3 paquetes
@@ -198,7 +199,7 @@ def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
 
 #
 #
-#
+# Trecv persistent
 def trecv(the_sock, MY_ADDR, SND_ADDR):
 
     # Shortening addresses to save space in packet
@@ -273,13 +274,13 @@ def trecv(the_sock, MY_ADDR, SND_ADDR):
     the_sock.close()
     return rcvd_data
 
+#Trecv no persistent
 def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
     flag_recv = False
     # Shortening addresses to save space in packet
     MY_ADDR = MY_ADDR[8:]
     SND_ADDR = SND_ADDR[8:]
     address_check = b""
-    #last_pkt = True
 
     # Buffer storing the received data to be returned
     rcvd_data = b""
@@ -289,9 +290,7 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
     while True:
         try:
             # Receive any packet
-            #if DEBUG_MODE: debug_printpacket("Mi direccion", MY_ADDR)
-            if DEBUG_MODE: print("DEBUG: From Swlpv3 My Address: ", MY_ADDR)
-            #print(MY_ADDR)
+            if DEBUG_MODE: print("DEBUG: From Swlp My Address: ", MY_ADDR)
             packet = the_sock.recv(MAX_PKT_SIZE)
             source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet)
             address_check = dest_addr 
@@ -344,6 +343,5 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
                 if DEBUG_MODE: debug_printpacket("sending ACK", ack_segment)
                 if last_pkt:
                     break
-    #the_sock.close()
     return rcvd_data, address_check
 

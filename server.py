@@ -10,8 +10,8 @@ import socket  # Networking support
 from time import time    # Current time
 import ubinascii
 import binascii
-import posthandlerv3 # PM: code to be executed to handle a POST
-import swlpv3 #AM: Libreria transporte no recursiva
+import posthandler # PM: code to be executed to handle a POST
+import swlp #AM: Libreria transporte no recursiva
 from tabla import BaseDatos #AM: Libreria Bases de Usuarios y mensajes
 from network import LoRa #AM: Libreria de LoRa
 import network
@@ -198,7 +198,7 @@ class Server:
                  print("... PM: running python code")
                  if DEBUG_MODE: print("DEBUG: lenght message:",len(treqbody))
                  if (len(treqbody) > 25):
-                     response_content = posthandlerv3.run(treqbody,self.s_right,self.loramac,self.userR)
+                     response_content = posthandler.run(treqbody,self.s_right,self.loramac,self.userR)
                  else:
 	                 print("... PM: empty POST received")
 	                 response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED, Please Check Again</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
@@ -250,7 +250,7 @@ class Server:
                 # reading data from the LORA channel using swlpv3
                 print("DEBUG: reading data from the LORA channel using swlpv3")
                 ufun.flash_led_to(YELLOW)
-                data,sender = swlpv3.trecvcontrol(self.s_right, my_lora_address, ANY_ADDR)
+                data,sender = swlp.trecvcontrol(self.s_right, my_lora_address, ANY_ADDR)
                 LoRaRec(data,self.s_right,sender)
                 if DEBUG_MODE: print("DEBUG: done reading data from the LORA channel using swlpv3:",data)
                 if DEBUG_MODE: print("The End")
@@ -274,7 +274,7 @@ def LoRaRec(data,socket,source_address):
         if DEBUG_MODE: print("DEBUG: Flag ", bandera)
         if bandera == 1:
             if DEBUG_MODE: print("DEBUG: Lora Address ", IPloraf)
-            sent, retrans,sent = swlpv3.tsend(my_lora_address, socket, my_lora_address, IPloraf)
+            sent, retrans,sent = swlp.tsend(my_lora_address, socket, my_lora_address, IPloraf)
     elif(source_address== my_lora_address[8:]): #The message is for me, I'm going to save it
         mensaje = data
         if DEBUG_MODE: print("DEBUG: message in server", mensaje)

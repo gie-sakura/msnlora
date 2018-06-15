@@ -2,7 +2,7 @@ import struct
 import sys
 import time
 from socket import *
-import swlpv3
+import swlp
 import os
 from machine import SD
 
@@ -48,7 +48,7 @@ class BaseDatos:
 		r_content += "<p><a href='/'>Back to home</a></p></body>\n"
 		return r_content,user
 
-	def ingreso(self,Emisor,destino,Mensaje): #AM: Funcion para ingresar datos cuando los recibe por primera vez
+	def ingreso(self,Emisor,destino,Mensaje): #AM: Function to save the messages
 		print("Saving Message")
 		if DEBUG_MODE: print("DEBUG: Message Database: ", self.BaseM)
 		if DEBUG_MODE: print("DEBUG: User Database: ", self.BaseU)
@@ -68,11 +68,9 @@ class BaseDatos:
 
 
 	def consultaControl(self,destino):
-		BaseUsuarios = self.BaseU
-		print("Base Usuarios")
-		print(BaseUsuarios)
+		if DEBUG_MODE: print("DEBUG: User Database: ", self.BaseU)
 		bandera = 0
-		if destino in BaseUsuarios: # AM: Consulta si esta registrado, y hace actualizacion
+		if destino in self.BaseU: # AM: Checking if the user is in the database
 			bandera = 1
 		else:
 			bandera = 0
