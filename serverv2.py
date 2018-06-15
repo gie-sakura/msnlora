@@ -81,7 +81,7 @@ class Server:
     try:
         self.s_right = socket.socket(socket.AF_LORA, socket.SOCK_RAW)
         self.loramac = binascii.hexlify(network.LoRa().mac())
-        print("socket creado") # AM: Adquisicion socket LoRa
+        print("Socket Created") # AM: Adquisicion socket LoRa
     except socket.error:
         exit('Error creating socket.') 
 
@@ -119,12 +119,11 @@ class Server:
      print("Got connection from:", addr)
      ufun.set_led_to(GREEN)
      data = s_left.recv(1024) #receive data from client
-     #if DEBUG_MODE: print("DEBUG: RAW INPUT DATA: ", data)
      treq = bytes.decode(data) #decode it to treq
      #determine request method  (HEAD and GET are supported) (PM: added support to POST )
      request_method = treq.split(' ')[0]
      print("DEBUG: self.flag_null", self.flag_null)
-     if(self.flag_null==0):#AM: En caso de que sea peticion nula, la cambia a una GET
+     if(self.flag_null==0):#AM: En caso de que sea peticion nula, la cambia a una GET, no implementado
         treq2 = treq
         request_method2 = treq2.split(' ')[0]
         print("Datos para metodo null")
@@ -195,26 +194,20 @@ class Server:
      elif (request_method == 'POST'):
              ## Load file content
          try:
-             total_time= utime.ticks_ms()
              if (file_requested.find("execposthandler") != -1):
                  print("... PM: running python code")
-                 #total_time= utime.ticks_ms()
                  if DEBUG_MODE: print("DEBUG: lenght message:",len(treqbody))
                  if (len(treqbody) > 25):
-                     response_content, search_time = posthandlerv3.run(treqbody,self.s_right,self.loramac,self.userR)
-                     total_time_final = utime.ticks_ms() - total_time
-                     stt = total_time_final - search_time
-                     if DEBUG_MODE: print("DEBUG: Total Time:",total_time_final)
-                     if DEBUG_MODE: print("DEBUG: STT:",stt)
+                     response_content = posthandlerv3.run(treqbody,self.s_right,self.loramac,self.userR)
                  else:
 	                 print("... PM: empty POST received")
 	                 response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED, Please Check Again</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
              elif (file_requested.find("tabla") != -1):
-                 print("AM: Consulta mensajes")
+                 print("AM: Checking Messages")
                  tabla=BaseDatos()
                  response_content = tabla.consulta(self.userR)
              elif (file_requested.find("registro") != -1):
-                 print("AM: Registro")
+                 print("AM: Register")
                  tabla=BaseDatos()
                  if (len(treqbody) > 12 ):
                      response_content,self.userR = tabla.ingresoRegistro(treqbody)
@@ -253,16 +246,14 @@ class Server:
                 print("DEBUG: in connections_handler: reading data from the HTTP channel")
                 s_left, addr = self.socket.accept()
                 self._wait_for_connections(s_left,addr)
-                #time.sleep(4) #AM: Retardo para cerrar conexiones http
             elif a == self.s_right:
                 # reading data from the LORA channel using swlpv3
                 print("DEBUG: reading data from the LORA channel using swlpv3")
                 ufun.flash_led_to(YELLOW)
                 data,sender = swlpv3.trecvcontrol(self.s_right, my_lora_address, ANY_ADDR)
                 LoRaRec(data,self.s_right,sender)
-                print("DEBUG: done reading data from the LORA channel using swlpv3")
-                print(data)
-                print("The End.")
+                if DEBUG_MODE: print("DEBUG: done reading data from the LORA channel using swlpv3:",data)
+                if DEBUG_MODE: print("The End")
                 ufun.flash_led_to(OFF)
 ###################################################################################
 
@@ -270,7 +261,7 @@ def LoRaRec(data,socket,source_address):
     mensaje = b""
     my_lora_address = binascii.hexlify(network.LoRa().mac())
     print("DEBUG: Content in reception LoRa",data)
-    print(source_address)
+    if DEBUG_MODE: print("DEBUG: Source Address in LoRaRec ", source_address)
     if (source_address == ANY_ADDR):
         content2 = str(data)
         IPlora,usuario = content2.split(",")
@@ -278,26 +269,24 @@ def LoRaRec(data,socket,source_address):
         lenght = len(usuario)
         userf = usuario[:lenght-1]
         IPloraf = IPlora[4:]
-        print("usuario "+str(userf))
+        if DEBUG_MODE: print("DEBUG: User ", userf)
         bandera=tabla.consultaControl(userf)
-        print("flag")
-        print(bandera)
+        if DEBUG_MODE: print("DEBUG: Flag ", bandera)
         if bandera == 1:
-            print("En tsend"+str(IPloraf))
+            if DEBUG_MODE: print("DEBUG: Lora Address ", IPloraf)
             sent, retrans,sent = swlpv3.tsend(my_lora_address, socket, my_lora_address, IPloraf)
-    elif(source_address== my_lora_address[8:]):
+    elif(source_address== my_lora_address[8:]): #The message is for me, I'm going to save it
         mensaje = data
-        print("El mensaje en serverv2")
-        print(mensaje)
+        if DEBUG_MODE: print("DEBUG: message in server", mensaje)
         if(mensaje !=b""):
             mensajet = str(mensaje)
             idEmisor, mensajef,usuario = mensajet.split(",")
-            print("Emisor: "+str(idEmisor[1:]))
-            print("Mensaje: "+str(mensajef))
-            print("Usuario: "+str(usuario))
+            print("Sender: "+str(idEmisor[1:]))
+            print("Message: "+str(mensajef))
+            print("User: "+str(usuario))
             lenght = len(usuario)
             userf = usuario[:lenght-1]
-            tabla.ingreso(idEmisor,userf,mensaje)
+            tabla.ingreso(idEmisor[2:],userf,mensajef)
 
 ################################################################################################################################
 # Enabling garbage collection
@@ -307,7 +296,7 @@ print("mem_free: ", gc.mem_free())
 sd = SD()
 os.mount(sd, '/sd')
 print("SD Card Enabled")
-lora = LoRa(mode=LoRa.LORA) #Inicializando LoRa
+lora = LoRa(mode=LoRa.LORA) #Starting LoRa
 lora.sf(7)# Set Spread Factor
 # AM: Se configura la lopy como punto de Acceso y servidor HTTP
 # PM: choosing random name for lopy
@@ -319,6 +308,6 @@ print ("Starting web server")
 tabla=BaseDatos() #Instanciamiento Clase Base de Datos
 s = Server(80)  # construct server object
 my_lora_address = binascii.hexlify(network.LoRa().mac())
-s.activate_server() # acquire the socket
+s.activate_server() # Acquire the socket
 s.connectionLoRa() #Acquire Socket LoRa
 s.conexion()

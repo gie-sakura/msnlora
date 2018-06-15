@@ -78,33 +78,30 @@ def reconocimiento(the_sock, tbs):
 
 def run(post_body,socket,mac,sender):
     tabla=BaseDatos()
-    print("Posthandler")
     ufun.set_led_to(BLUE)
     dest_lora_address =b""
     # PM: extracting data to be sent from passed POST body 
     blks = post_body.split("&")
-    print(blks)
+    if DEBUG_MODE: print("DEBUG: Data received from the form: ", blks)
     tbs=str(mac)
     for i in blks:
         v = i.split("=")
         tbs += ","+v[1]
     if DEBUG_MODE: print("DEBUG: tbs: ", tbs)
     loramac, receiver, message=tbs.split(",")
-    # AM: Revisando a donde enviar y enviando
+    # AM: Checking where to send the message
     start_search_time = utime.ticks_ms()
     dest_lora_address = reconocimiento(socket, receiver)
     search_time = utime.ticks_ms() - start_search_time
     dest_lora_address2 = dest_lora_address[2:]
     if DEBUG_MODE: print("DEBUG: dest lora address: ", dest_lora_address2)
     if DEBUG_MODE: print("DEBUG: Search Destination time: %0.10f mseconds."% search_time)
-    print("DEBUG: Search Destination time: %0.10f mseconds."% search_time)
     if(dest_lora_address != b""):
         start_time = utime.ticks_ms()
         aenvio = str(sender)+","+str(message)+","+str(receiver) # AM: cuando se tiene direccion de envio, envia ID del emisor y el mensaje
-        print("aenvio: "+aenvio)
+        if DEBUG_MODE: print("DEBUG: Payload to be sent: ", aenvio)
         sent, retrans,sent = swlpv3.tsend(aenvio, socket, mac, dest_lora_address)
         elapsed_time = utime.ticks_ms() - start_time
-        print("Sent")
         if DEBUG_MODE: print("DEBUG: Sent OK, Message time: %0.10f mseconds."% elapsed_time)
         if DEBUG_MODE: print("DEBUG: Retransmisions",retrans)
         if DEBUG_MODE: print("DEBUG: Segments sent:",sent)
@@ -119,4 +116,4 @@ def run(post_body,socket,mac,sender):
         ufun.set_led_to(OFF)
         r_content = "<h1>Destination Not found\n"
         r_content += "<h1><a href='/'>Back To Home</a></h1>\n"
-    return r_content, search_time
+    return r_content

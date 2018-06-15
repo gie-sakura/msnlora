@@ -5,7 +5,6 @@ from socket import *
 import swlpv3
 import os
 from machine import SD
-#import pickle
 
 DEBUG_MODE = True
 q=0
@@ -16,7 +15,7 @@ class BaseDatos:
 	n=0
 	message_number = 0
 
-	def ingresoRegistro(self,usuario): #AM: Registro de nuevo usuario
+	def ingresoRegistro(self,usuario): #AM: Register from a new user
 		tbs="a"
 		blks = usuario.split("&")
 		for i in blks:
@@ -25,7 +24,6 @@ class BaseDatos:
 		print(tbs)
 		x=tbs.split(",")
 		if DEBUG_MODE: print("DEBUG: data from the form: ", x)
-		#print(x)
 		user=x[1]
 		if DEBUG_MODE: print("DEBUG: User: ", user)
 		if user in self.BaseU:
@@ -33,10 +31,10 @@ class BaseDatos:
 		else:
 			self.BaseU.append(user)
 			self.BaseM.append(user)
-			posicion=self.BaseU.index(user)	
+			posicion=self.BaseU.index(user)
+			self.BaseM[posicion]={}	
 		if DEBUG_MODE: print("DEBUG: Position: ", posicion)
 		if DEBUG_MODE: print("DEBUG: User Database: ", self.BaseU)
-		self.BaseM[posicion]={}
 		r_content='<head><meta charset="utf-8"><title>Register LoRa</title>\n'
 		r_content +='<style type="text/less">\n'
 		r_content +=".dropdown-toggle {display:none;}\n"
@@ -51,13 +49,13 @@ class BaseDatos:
 		return r_content,user
 
 	def ingreso(self,Emisor,destino,Mensaje): #AM: Funcion para ingresar datos cuando los recibe por primera vez
-		print("Entra a guardar el mensaje")
+		print("Saving Message")
 		if DEBUG_MODE: print("DEBUG: Message Database: ", self.BaseM)
 		if DEBUG_MODE: print("DEBUG: User Database: ", self.BaseU)
 		posicion=self.BaseU.index(destino)
 		if DEBUG_MODE: print("DEBUG: Position: ", posicion)
-		self.BaseM[posicion]["Emisor "+str(self.n)]=Emisor
-		self.BaseM[posicion]["Mensaje "+str(self.n)]=Mensaje
+		self.BaseM[posicion][str(self.n)+"Emisor "]=Emisor
+		self.BaseM[posicion][str(self.n)+"Mensaje "]=Mensaje
 		self.n+=1
 		if DEBUG_MODE: print("DEBUG: New Users Database: ", self.BaseU)
 		if DEBUG_MODE: print("DEBUG: New Message Database: ", self.BaseM)
@@ -90,7 +88,8 @@ class BaseDatos:
 		if (BaseMConsulta[posicion]!={}):
 			r_content = "<h1>Messages sent via LoRa</h1>\n"
 			r_content += "\n"
-			r_content += str(BaseMConsulta[posicion]) + "\n"
+			for key,val in BaseMConsulta[posicion].items(): 
+				r_content += str(val)+" , \n"
 			r_content += "\n"
 			r_content += "<p><a href='/'>Back to home</a></p>\n"
 		else:
@@ -103,9 +102,6 @@ class BaseDatos:
 #Management of the data in the SD Card
 def save_backup(DBU,DBM):
 	global q
-	#sd = SD()
-	#os.mount(sd, '/sd')
-	#print("SD Card Enabled")
 	f = open('/sd/DatabaseU'+str(q)+'.txt', 'w')
 	f.write(str(DBU))
 	f.close()
