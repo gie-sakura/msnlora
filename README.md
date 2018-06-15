@@ -1,3 +1,3 @@
-+# Messenger LoRa
-+
-+This repo is a practice repo I am using to learn Bitbucket.
+# Messenger LoRa
+
+Low-power system based on the LoRa protocol to provide a messaging system.
