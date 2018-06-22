@@ -1,6 +1,6 @@
 # Messenger LoRa
 
-Low-power system for comunidades apartadas based on the LoRa protocol to provide a messaging system.
+Low-power system for isolated communities based on the LoRa protocol to provide a messaging system through the creation of a user who can send a message only if the destination user is also registered.
 
 ## Getting Started
 
@@ -8,7 +8,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-This is the basic information required to set up a development environment adecuado, for a Pycom device, in this case the LoPys.
+This is the basic information required to set up a suitable development environment for a Pycom device, in this case the LoPys.
 
 You first need to have Python 3 installed in your computer. Check here for the proper instructions and code:
 
@@ -22,12 +22,12 @@ Install the software required to connect to the LoPy device
 $ python3 -m pip install mpy-repl-tool
 ```
 
-Para mas información sobre el manejo de LoPys dirigete a las direcciones:
-
+For more information you can check the full [documentation](https://docs.pycom.io/)
 
 ### Installing
 
-Now you can download the project e instalarlo en el dispositivo.
+Now you can download and install the project in your device.
+
 
 Primero descarga el proyecto y lo extraes en tu máquina
 
@@ -51,3 +51,18 @@ conectate a la red creada e ingresa la ip
 ```
 192.168.4.1
 ```
+## Authors
+
+* **Angélica Moreno Cárdenas**
+* **Miguel Kiyoshi Nakamura Pinto**
+* **Pietro Manzoni**
+
+## License
+
+This project is licensed under the GNU GPLv3 - see the [LICENSE.md](license.md) file for details
+
+## Acknowledgments
+
+* **Ermanno Pietrosemoli**
+* **Marco Zennaro**
+* **Marco Rainone**
