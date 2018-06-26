@@ -28,33 +28,32 @@ For more information you can check the full [documentation](https://docs.pycom.i
 
 Now you can download and install the project in your device.
 
+First download the .ZIP and extract it in your machine.
 
-Primero descarga el proyecto y lo extraes en tu máquina
+Installing the repository in the LoPy device.
 
-Instala el repositorio en la LoPy.
-
-En la ruta donde se encuentra el proyecto digita:
+On the project's location type:
 ```
 $ python3 -m there push * /flash
 ```
-Ingresa al modo PERL
+Get access to the REPL prompt:
 ```
 $ python3 -m there -i
 ```
 ## Deployment
 
-Una vez el código se encuentra en la LoPy se importa el archivo server
+One in the REPL promt import the server file
 ```
 import server
 ```
-conectate a la red creada e ingresa la ip
+Connect to the network and type the address
 ```
 192.168.4.1
 ```
 ## Authors
 
 * **Angélica Moreno Cárdenas**
-* **Miguel Kiyoshi Nakamura Pinto**
+* **Miguel Kiyoshy Nakamura Pinto**
 * **Pietro Manzoni**
 
 ## License
