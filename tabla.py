@@ -12,6 +12,7 @@ q=0
 class BaseDatos:
 	BaseM=[]
 	BaseU=[]
+	BaseB=[]
 	n=0
 	message_number = 0
 
@@ -44,6 +45,7 @@ class BaseDatos:
 		r_content += "<body><h1>Welcome</h1>\n"
 		r_content += "<h1>"+user+"</h1>\n"
 		r_content += '<form class="form-horizontal well" action="" method="post"><div><label for="named">Destination:</label><input type="text" id="named" name="dest_name"></div><div><label for="msg">Message:</label> <textarea id="msg" name="user_message"></textarea></div><div class="button"><button type="submit" onclick=this.form.action="execposthandler.html";document.getElementById("oculto").style.visibility="visible">Send your message</button></div><div class="button"><button type="submit" onclick=this.form.action="tabla.html">Check my messages</button></div>'
+		r_content += '<div class="button"><button type="submit" onclick=this.form.action="broadcast.html">Send Message To All Users</button></div>'
 		r_content += '<div id="oculto" style="visibility:hidden">Sending...</div>'
 		r_content += "<p><a href='/'>Back to home</a></p></body>\n"
 		return r_content,user
@@ -89,13 +91,21 @@ class BaseDatos:
 			for key,val in BaseMConsulta[posicion].items(): 
 				r_content += str(val)+" , \n"
 			r_content += "\n"
+			r_content = "<h1>Broadcast Messages</h1>\n"
+			r_content = str(self.BaseB)+" , \n"
 			r_content += "<p><a href='/'>Back to home</a></p>\n"
 		else:
 			r_content = "<h1>No Messages</h1>\n"
 			r_content += "\n"
 			r_content += "\n"
+			r_content += "<h1>Broadcast Messages</h1>\n"
+			r_content += str(self.BaseB)+" , \n"
 			r_content += "<p><a href='/'>Back to home</a></p>\n"
 		return r_content
+
+	def broadcast_message(self,message):
+		self.BaseB.append(message)
+		print("Message Broadcast Saved")
 ################################################################################################################
 #Management of the data in the SD Card
 def save_backup(DBU,DBM):

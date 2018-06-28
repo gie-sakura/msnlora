@@ -198,7 +198,7 @@ class Server:
                  print("... PM: running python code")
                  if DEBUG_MODE: print("DEBUG: lenght message:",len(treqbody))
                  if (len(treqbody) > 25):
-                     response_content = posthandler.run(treqbody,self.s_right,self.loramac,self.userR)
+                     response_content = posthandler.run(treqbody,self.s_right,self.loramac,self.userR,0)
                  else:
 	                 print("... PM: empty POST received")
 	                 response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED, Please Check Again</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
@@ -215,6 +215,10 @@ class Server:
                  else:
                      print("... PM: empty POST received")
                      response_content = b"<html><body><p>Error: Please Choose a username</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
+             elif (file_requested.find("broadcast") != -1):
+                print("AM: Sending Message Broadcast")
+                tabla=BaseDatos()
+                response_content = posthandler.run(treqbody,self.s_right,self.loramac,self.userR,1)
              else:
                  file_handler = open(file_requested,'rb')
                  response_content = file_handler.read() # read file content
@@ -268,6 +272,10 @@ def LoRaRec(data,socket,source_address):
         print("IP Lora: "+str(IPlora))
         lenght = len(usuario)
         userf = usuario[:lenght-1]
+        if(userf=="broadcast"):
+            message_broadcast = str(IPlora[2:])
+            if DEBUG_MODE: print("DEBUG: Message Broadcast received",message_broadcast)
+            tabla.broadcast_message(message_broadcast)
         IPloraf = IPlora[4:]
         if DEBUG_MODE: print("DEBUG: User ", userf)
         bandera=tabla.consultaControl(userf)

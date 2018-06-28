@@ -47,20 +47,30 @@ def unpack(packet):
     
     return TM, TP, content    
 
-def reconocimiento(the_sock, tbs):
+def reconocimiento(the_sock,tbs,message):
     # AM: We send a broadcast message looking for the user
-    mensaje = ""
+    mensaje =""
     content= ""
     cuenta = 0
     address = b""
+    m_broadcast = 0
     lora = LoRa(mode=LoRa.LORA)
     my_lora_address = binascii.hexlify(network.LoRa().mac())
     dest_lora_address = b'FFFFFFFFFFFFFFFF'
-    content=str(str(my_lora_address)+","+str(tbs))
+    if(tbs=="broadcast"):
+        content=message+","+str(tbs)
+    else:
+        content=str(str(my_lora_address)+","+str(tbs))
     if DEBUG_MODE: print("DEBUG: Content: ", content)
     if DEBUG_MODE: print("DEBUG: Searching: ", tbs)
-    # AM: Se establece un tiempo de búsqueda de usuario de 20 segundos
+    # AM: We wait 20 seconds for the user
     while True:
+        if(tbs=="broadcast"):#We check if the message is broadcast
+            if DEBUG_MODE: print("DEBUG: Sending Message broadcast")
+            sent,retrans,nsent = swlp.tsend(content, the_sock, my_lora_address, dest_lora_address)
+            mensaje=b""
+            m_broadcast = 1
+            break
         if DEBUG_MODE: print("DEBUG: Searching: ", cuenta)
         sent,retrans,nsent = swlp.tsend(content, the_sock, my_lora_address, dest_lora_address)
         mensaje,address = swlp.trecvcontrol(the_sock, my_lora_address, dest_lora_address)
@@ -72,9 +82,9 @@ def reconocimiento(the_sock, tbs):
         elif(cuenta==3 and mensaje==b""):
             if DEBUG_MODE: print("DEBUG: Message when destination not found: ", mensaje)
             break
-    return mensaje
+    return mensaje,m_broadcast
 
-def run(post_body,socket,mac,sender):
+def run(post_body,socket,mac,sender,flag_broadcast):
     tabla=BaseDatos()
     ufun.set_led_to(BLUE)
     dest_lora_address =b""
@@ -89,14 +99,16 @@ def run(post_body,socket,mac,sender):
     loramac, receiver, message=tbs.split(",")
     # AM: Checking where to send the message
     start_search_time = utime.ticks_ms()
-    dest_lora_address = reconocimiento(socket, receiver)
+    if(flag_broadcast==1):
+        receiver = "broadcast"
+    dest_lora_address, m_broadcast = reconocimiento(socket,receiver,message)
     search_time = utime.ticks_ms() - start_search_time
     dest_lora_address2 = dest_lora_address[2:]
     if DEBUG_MODE: print("DEBUG: dest lora address: ", dest_lora_address2)
     if DEBUG_MODE: print("DEBUG: Search Destination time: %0.10f mseconds."% search_time)
     if(dest_lora_address != b""):
         start_time = utime.ticks_ms()
-        aenvio = str(sender)+","+str(message)+","+str(receiver) # AM: cuando se tiene direccion de envio, envia ID del emisor y el mensaje
+        aenvio = str(sender)+","+str(message)+","+str(receiver) # AM: When you know where to send the message
         if DEBUG_MODE: print("DEBUG: Payload to be sent: ", aenvio)
         sent, retrans,sent = swlp.tsend(aenvio, socket, mac, dest_lora_address)
         elapsed_time = utime.ticks_ms() - start_time
@@ -106,6 +118,13 @@ def run(post_body,socket,mac,sender):
         ufun.set_led_to(OFF)
         # PM: creating web page to be returned
         r_content = "<h1>Message sent via LoRa</h1>\n"
+        r_content += "\n"
+        r_content += tbs + "\n"
+        r_content += "\n"
+        r_content += "<p><a href='/'>Back to home</a></p>\n"
+    elif(m_broadcast==1):
+        # AM: Creating Web Page to be returned
+        r_content = "<h1>Message sent to all users via LoRa</h1>\n"
         r_content += "\n"
         r_content += tbs + "\n"
         r_content += "\n"
