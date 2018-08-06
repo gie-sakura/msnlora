@@ -35,6 +35,20 @@ WEB_PAGES_HOME_DIR = '/flash' # Directory where webpage files are stored
 ANY_ADDR = b'FFFFFFFF'
 flag = 0
 DEBUG_MODE = True
+#LoRA parameters
+freq=869000000                  # def.: frequency=868000000
+tx_pow=14                       # def.: tx_power=14
+band=LoRa.BW_125KHZ             # def.: bandwidth=LoRa.868000000
+spreadf=7                       # def.: sf=7
+prea=8                          # def.: preamble=8
+cod_rate=LoRa.CODING_4_5        # def.: coding_rate=LoRa.CODING_4_5
+pow_mode=LoRa.ALWAYS_ON         # def.: power_mode=LoRa.ALWAYS_ON
+tx_iq_inv=False                 # def.: tx_iq=false
+rx_iq_inv=False                 # def.: rx_iq=false
+ada_dr=False                    # def.: adr=false
+pub=False                       # def.: public=true
+tx_retr=1                       # def.: tx_retries=1
+dev_class=LoRa.CLASS_A          # def.: device_class=LoRa.CLASS_A
 
 class Server:
  """ Class describing a simple HTTP server objects."""
@@ -304,7 +318,8 @@ print("mem_free: ", gc.mem_free())
 sd = SD()
 os.mount(sd, '/sd')
 print("SD Card Enabled")
-lora = LoRa(mode=LoRa.LORA) #Starting LoRa
+#Starting LoRa
+lora = LoRa(mode=LoRa.LORA,frequency=freq,tx_power=tx_pow,bandwidth=band,sf=spreadf,preamble=prea,coding_rate=cod_rate,power_mode=pow_mode,tx_iq=tx_iq_inv,rx_iq=rx_iq_inv,adr=ada_dr,public=pub,tx_retries=tx_retr,device_class=dev_class)
 lora.sf(7)# Set Spread Factor
 # AM: Se configura la lopy como punto de Acceso y servidor HTTP
 # PM: choosing random name for lopy

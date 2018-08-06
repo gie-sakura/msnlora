@@ -22,7 +22,7 @@ DEBUG_MODE = True
 # BEGIN: Utility functions
 #
 
-MAX_PKT_SIZE = 128  # Must determine which is the maximum pkt size in LoRa with Spread Factor 7...
+MAX_PKT_SIZE = 230  # Must determine which is the maximum pkt size in LoRa with Spread Factor 7...
 HEADER_FORMAT = "!8s8sHHB3s"
 HEADER_SIZE = 24
 # header structure:
@@ -123,7 +123,7 @@ def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
     send_time = time.time()
     sent += 1
     if DEBUG_MODE: debug_printpacket("sending 1st", packet)
-    the_sock.settimeout(5)      # 5 seconds initial timeout.... LoRa is slow
+    the_sock.settimeout(7)      # 5 seconds initial timeout.... LoRa is slow
     dentro=False
     if not dentro:
         while True:
@@ -176,8 +176,7 @@ def tsend(payload, the_sock, SND_ADDR, RCV_ADDR):
                     packet = make_packet(SND_ADDR, RCV_ADDR, seqnum, acknum, DATA_PACKET, last_pkt, text)
                     the_sock.send(packet)
                     send_time = time.time()
-                    sent += 1
-                    flagn=0 
+                    sent += 1 
                     if DEBUG_MODE: debug_printpacket("sending new packet", packet, True)
                 else:
                     if DEBUG_MODE: print("ERROR: packet received not valid")
