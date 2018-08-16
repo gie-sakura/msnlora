@@ -27,8 +27,8 @@ class Lorarcv(LoRa):
       # Must determine which is the maximum pkt size in LoRa with Spread Factor 7... 
     
 
-    def __init__(self, verbose=False):
-        super(Lorarcv, self).__init__(verbose)
+    def __init__(self):
+        #super(Lorarcv, self).__init__(verbose)
         self.set_mode(MODE.SLEEP)
         self.set_dio_mapping([0] * 6)
         MAX_PKT_SIZE = 230
@@ -206,6 +206,7 @@ class Lorarcv(LoRa):
         self.set_mode(MODE.RXCONT)
         print("Entra aqui en recv 2")
         while (self.flag==0):
-            print("Entra")
+            #print("Entra")
+            sys.stdout.write("Entra en el while")
             sleep(.5)
-        return self.rcvd_data,
+        return self.rcvd_data, self.source_addr

@@ -26,6 +26,20 @@ PINK=0x6b007f
 BLUE= 0x005e63
 OFF = 0x000000
 DEBUG_MODE = True
+#LoRA parameters
+freq=869000000                  # def.: frequency=868000000         
+tx_pow=14                       # def.: tx_power=14                 
+band=LoRa.BW_125KHZ             # def.: bandwidth=LoRa.868000000    
+spreadf=7                       # def.: sf=7                        
+prea=8                          # def.: preamble=8                  
+cod_rate=LoRa.CODING_4_5        # def.: coding_rate=LoRa.CODING_4_5 
+pow_mode=LoRa.ALWAYS_ON         # def.: power_mode=LoRa.ALWAYS_ON   
+tx_iq_inv=False                 # def.: tx_iq=false                 
+rx_iq_inv=False                 # def.: rx_iq=false                 
+ada_dr=False                    # def.: adr=false                   
+pub=False                       # def.: public=true                 
+tx_retr=1                       # def.: tx_retries=1                
+dev_class=LoRa.CLASS_A          # def.: device_class=LoRa.CLASS_A
 
 # AM: subpacket creation not implemented
 def make_subpacket(TipoMensaje, TipoPaquete, content):
@@ -54,7 +68,20 @@ def reconocimiento(the_sock,tbs,message):
     cuenta = 0
     address = b""
     m_broadcast = 0
-    lora = LoRa(mode=LoRa.LORA)
+    lora = LoRa(mode=LoRa.LORA,
+        frequency=freq,         
+        tx_power=tx_pow,               
+        bandwidth=band,    
+        sf=spreadf,                       
+        preamble=prea,               
+        coding_rate=cod_rate,
+        power_mode=pow_mode,  
+        tx_iq=tx_iq_inv,                
+        rx_iq=rx_iq_inv,                
+        adr=ada_dr,                  
+        public=pub,       
+        tx_retries=tx_retr,              
+        device_class=dev_class)
     my_lora_address = binascii.hexlify(network.LoRa().mac())
     dest_lora_address = b'FFFFFFFFFFFFFFFF'
     if(tbs=="broadcast"):
@@ -71,6 +98,8 @@ def reconocimiento(the_sock,tbs,message):
             mensaje=b""
             m_broadcast = 1
             break
+        elif(tbs==b'FFFFFFFraspberry'):
+            dest_lora_address=tbs
         if DEBUG_MODE: print("DEBUG: Searching: ", cuenta)
         sent,retrans,nsent = swlp.tsend(content, the_sock, my_lora_address, dest_lora_address)
         mensaje,address = swlp.trecvcontrol(the_sock, my_lora_address, dest_lora_address)
@@ -101,6 +130,10 @@ def run(post_body,socket,mac,sender,flag_broadcast):
     start_search_time = utime.ticks_ms()
     if(flag_broadcast==1):
         receiver = "broadcast"
+    if(flag_broadcast==2):#When is a message via telegram
+        message=sender+","+receiver
+        receiver= b'FFFFFFFraspberry'
+        if DEBUG_MODE: print("DEBUG: Data to raspberry: ", message)
     dest_lora_address, m_broadcast = reconocimiento(socket,receiver,message)
     search_time = utime.ticks_ms() - start_search_time
     dest_lora_address2 = dest_lora_address[2:]

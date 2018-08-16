@@ -12,8 +12,8 @@ import socket
 import struct
 import sys
 import time
-import uhashlib
-import ubinascii
+import hashlib
+import binascii
 
 
 DEBUG_MODE = True
@@ -22,7 +22,7 @@ DEBUG_MODE = True
 # BEGIN: Utility functions
 #
 
-MAX_PKT_SIZE = 128  # Must determine which is the maximum pkt size in LoRa with Spread Factor 7...
+MAX_PKT_SIZE = 230  # Must determine which is the maximum pkt size in LoRa with Spread Factor 7...
 HEADER_FORMAT = "!8s8sHHB3s"
 HEADER_SIZE = 24
 # header structure:
@@ -63,8 +63,12 @@ def unpack(packet):
 
 def get_checksum(data):
 
-    h = uhashlib.sha256(data)
-    ha = ubinascii.hexlify(h.digest())
+    h = hashlib.sha256(data)
+    ha = binascii.hexlify(h.digest())
+    print("Checksum de la funcion checksum")
+    print(ha[-3:])
+    print("checksum completo")
+    print(ha)
     return ha[-3:]
 
 def debug_printpacket(msg, packet, cont=False):
@@ -294,6 +298,8 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
             if DEBUG_MODE: print("DEBUG: From Swlp My Address: ", MY_ADDR)
             packet = the_sock.recv(MAX_PKT_SIZE)
             source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet)
+            print("check recv checksum")
+            print(check)
             address_check = dest_addr
             if DEBUG_MODE: print("From Swlp receiving source Address: ", source_addr) 
             if (dest_addr==MY_ADDR) or (dest_addr==ANY_ADDR):
@@ -308,10 +314,12 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
     if(flag_recv==True):
         if DEBUG_MODE: debug_printpacket("received 1st packet", packet, True)
         checksum_OK = (check == get_checksum(content))
+        print(checksum_OK)
         if (checksum_OK) and (next_acknum == acknum):
             packet_valid = True
             rcvd_data += content
             next_acknum += 1
+            if DEBUG_MODE: print("Packet Valid")
         else: 
             packet_valid = False
         # Sending first ACK
@@ -319,7 +327,10 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
         the_sock.setblocking(False)
         the_sock.send(ack_segment)
         if DEBUG_MODE: debug_printpacket("sent 1st ACK", ack_segment)
-        #if(source_addr==)        
+        if(source_addr==b'raspberr') or (source_addr==b'aspberry'):
+            if DEBUG_MODE: print("DEBUG: Sending again because it's a raspberry")
+            time.sleep(1)
+            the_sock.send(ack_segment)
         if not last_pkt:
             while True:
                 while True:
@@ -327,7 +338,11 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
                     the_sock.setblocking(True)
                     packet = the_sock.recv(MAX_PKT_SIZE)
                     source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet)
-                    if (dest_addr==MY_ADDR):
+                    dest_addra=str(dest_addr)
+                    dest_addr2=dest_addra[2:(len(dest_addra)-1)]
+                    if DEBUG_MODE: print("DEBUG: dest_addr",dest_addr2)
+                    if DEBUG_MODE: print("DEBUG: MY_ADDR",MY_ADDR)
+                    if (dest_addr2==MY_ADDR):
                         if DEBUG_MODE: debug_printpacket("received packet", packet, True)
                         break
                     else: 
@@ -344,6 +359,10 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
                 the_sock.setblocking(True)
                 the_sock.send(ack_segment)
                 if DEBUG_MODE: debug_printpacket("sending ACK", ack_segment)
+                if(source_addr==b'raspberr'):
+                    if DEBUG_MODE: print("DEBUG: Sending again because it's a raspberry")
+                    time.sleep(1)
+                    the_sock.send(ack_segment)
                 if last_pkt:
                     break
     return rcvd_data, address_check

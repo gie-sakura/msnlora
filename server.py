@@ -36,19 +36,19 @@ ANY_ADDR = b'FFFFFFFF'
 flag = 0
 DEBUG_MODE = True
 #LoRA parameters
-freq=869000000                  # def.: frequency=868000000
-tx_pow=14                       # def.: tx_power=14
-band=LoRa.BW_125KHZ             # def.: bandwidth=LoRa.868000000
-spreadf=7                       # def.: sf=7
-prea=8                          # def.: preamble=8
-cod_rate=LoRa.CODING_4_5        # def.: coding_rate=LoRa.CODING_4_5
-pow_mode=LoRa.ALWAYS_ON         # def.: power_mode=LoRa.ALWAYS_ON
-tx_iq_inv=False                 # def.: tx_iq=false
-rx_iq_inv=False                 # def.: rx_iq=false
-ada_dr=False                    # def.: adr=false
-pub=False                       # def.: public=true
-tx_retr=1                       # def.: tx_retries=1
-dev_class=LoRa.CLASS_A          # def.: device_class=LoRa.CLASS_A
+freq=869000000                  # def.: frequency=868000000         
+tx_pow=14                       # def.: tx_power=14                 
+band=LoRa.BW_125KHZ             # def.: bandwidth=LoRa.868000000    
+spreadf=7                       # def.: sf=7                        
+prea=8                          # def.: preamble=8                  
+cod_rate=LoRa.CODING_4_5        # def.: coding_rate=LoRa.CODING_4_5 
+pow_mode=LoRa.ALWAYS_ON         # def.: power_mode=LoRa.ALWAYS_ON   
+tx_iq_inv=False                 # def.: tx_iq=false                 
+rx_iq_inv=False                 # def.: rx_iq=false                 
+ada_dr=False                    # def.: adr=false                   
+pub=False                       # def.: public=true                 
+tx_retr=1                       # def.: tx_retries=1                
+dev_class=LoRa.CLASS_A          # def.: device_class=LoRa.CLASS_A   
 
 class Server:
  """ Class describing a simple HTTP server objects."""
@@ -233,6 +233,16 @@ class Server:
                 print("AM: Sending Message Broadcast")
                 tabla=BaseDatos()
                 response_content = posthandler.run(treqbody,self.s_right,self.loramac,self.userR,1)
+             elif (file_requested.find("telegram") != -1):
+                print("AM: Telegram Message")
+                tabla=BaseDatos()
+                if DEBUG_MODE: print("DEBUG: lenght message:",len(treqbody))
+                if (len(treqbody) > 25):
+                    response_content = posthandler.run(treqbody,self.s_right,self.loramac,self.userR,2)
+                else:
+                    print("... AM: empty POST received")
+                    response_content = b"<html><body><p>Error: EMPTY FORM RECEIVED, Please Check Again</p><p>Python HTTP server</p><p><a href='/'>Back to home</a></p></body></html>"
+
              else:
                  file_handler = open(file_requested,'rb')
                  response_content = file_handler.read() # read file content
@@ -319,8 +329,20 @@ sd = SD()
 os.mount(sd, '/sd')
 print("SD Card Enabled")
 #Starting LoRa
-lora = LoRa(mode=LoRa.LORA,frequency=freq,tx_power=tx_pow,bandwidth=band,sf=spreadf,preamble=prea,coding_rate=cod_rate,power_mode=pow_mode,tx_iq=tx_iq_inv,rx_iq=rx_iq_inv,adr=ada_dr,public=pub,tx_retries=tx_retr,device_class=dev_class)
-lora.sf(7)# Set Spread Factor
+lora = LoRa(mode=LoRa.LORA,
+        frequency=freq,         
+        tx_power=tx_pow,               
+        bandwidth=band,    
+        sf=spreadf,                       
+        preamble=prea,               
+        coding_rate=cod_rate,
+        power_mode=pow_mode,  
+        tx_iq=tx_iq_inv,                
+        rx_iq=rx_iq_inv,                
+        adr=ada_dr,                  
+        public=pub,       
+        tx_retries=tx_retr,              
+        device_class=dev_class)
 # AM: Se configura la lopy como punto de Acceso y servidor HTTP
 # PM: choosing random name for lopy
 lopy_name = "messenger"+str(ufun.random_in_range())

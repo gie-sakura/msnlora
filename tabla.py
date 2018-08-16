@@ -44,8 +44,9 @@ class BaseDatos:
 		r_content +="</head>\n"
 		r_content += "<body><h1>Welcome</h1>\n"
 		r_content += "<h1>"+user+"</h1>\n"
-		r_content += '<form class="form-horizontal well" action="" method="post"><div><label for="named">Destination:</label><input type="text" id="named" name="dest_name"></div><div><label for="msg">Message:</label> <textarea id="msg" name="user_message"></textarea></div><div class="button"><button type="submit" onclick=this.form.action="execposthandler.html";document.getElementById("oculto").style.visibility="visible">Send your message</button></div><div class="button"><button type="submit" onclick=this.form.action="tabla.html">Check my messages</button></div>'
+		r_content += '<form class="form-horizontal well" action="" method="post"><div><label for="named">Destination or Telegram User:</label><input type="text" id="named" name="dest_name"></div><div><label for="msg">Message:</label> <textarea id="msg" name="user_message"></textarea></div><div class="button"><button type="submit" onclick=this.form.action="execposthandler.html";document.getElementById("oculto").style.visibility="visible">Send your message</button></div><div class="button"><button type="submit" onclick=this.form.action="tabla.html">Check my messages</button></div>'
 		r_content += '<div class="button"><button type="submit" onclick=this.form.action="broadcast.html">Send Message To All Users</button></div>'
+		r_content += '<div class="button"><button type="submit" onclick=this.form.action="telegram.html">Send Message Via telegram</button></div>'
 		r_content += '<div id="oculto" style="visibility:hidden">Sending...</div>'
 		r_content += "<p><a href='/'>Back to home</a></p></body>\n"
 		return r_content,user
