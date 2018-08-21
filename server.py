@@ -140,12 +140,12 @@ class Server:
      if(self.flag_null==0):#AM: En caso de que sea peticion nula, la cambia a una GET, no implementado
         treq2 = treq
         request_method2 = treq2.split(' ')[0]
-        print("Datos para metodo null")
+        print("Data in case of Null Method")
         self.flag_null = 1
-     if(data=="b''"):
+     if(data==''):
         treq = treq2
         request_method = request_method2
-        print("Cambio de datos porque se recibio peticion null")
+        print("Changing data Because is null method")
      print ("Method: ", request_method)
      print ("Full HTTP message: -->")
      print (treq)
@@ -222,6 +222,8 @@ class Server:
                  response_content = tabla.consulta(self.userR)
              elif (file_requested.find("registro") != -1):
                  print("AM: Register")
+                 if DEBUG_MODE: print("DEBUG: lenght user:",len(treqbody))
+                 if DEBUG_MODE: print("DEBUG: treqbody:",treqbody)
                  tabla=BaseDatos()
                  if (len(treqbody) > 12 ):
                      response_content,self.userR = tabla.ingresoRegistro(treqbody)
@@ -263,6 +265,13 @@ class Server:
 
      else:
          print("Unknown HTTP request method:", request_method)
+ 
+ def checking_connection(self,s_left,addr):
+    data=""
+    print("Got connection from:", addr)
+    data = s_left.recv(1024) #receive data from client
+    treq = bytes.decode(data)
+
 
  def conexion(self): #Funcion encargada de coordinar uso de los sockets
     ANY_ADDR = b'FFFFFFFFFFFFFFFF'

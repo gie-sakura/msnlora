@@ -9,8 +9,6 @@ import signal
 import struct
 import socket
 
-
-
 DEBUG_MODE = True
 socket.setdefaulttimeout(10)
 BOARD.setup()
@@ -79,7 +77,7 @@ class Lora(LoRa):
         #signal.alarm(10)
         BOARD.led_on()
         if(self.env==0):
-            print("Entra a rx")
+            if DEBUG_MODE: print("DEBUG: Reception")
             if DEBUG_MODE: print("DEBUG: From Swlp My Address: ", self.MY_ADDR)
             #print("\nRxDone")
             #print(self.get_irq_flags())
@@ -132,7 +130,6 @@ class Lora(LoRa):
                         if DEBUG_MODE: print("checksum_OK",checksum_OK)
                     # ACK the packet if it's correct; otherwise send NAK.
                         if (checksum_OK) and (self.next_acknum == acknum):
-                            print("Entra al checksum")
                             packet_valid = True
                             self.rcvd_data += content
                             self.next_acknum += 1
@@ -161,11 +158,11 @@ class Lora(LoRa):
                     else:
                         if DEBUG_MODE: self.debug_printpacket("DISCARDED received packet; not for me!!", packet)
                 else:
-                    sleep(.5)
+                    time.sleep(.5)
                     self.set_mode(MODE.SLEEP)
                     self.flag=1
         elif(self.env==1):
-            print("Entra a rx de la transmision")
+            if DEBUG_MODE: print("DEBUG: Waiting for ACK")
             if DEBUG_MODE: print("SND_ADDR", self.snd_add)
             #print("\nRxDone")
             #print(self.get_irq_flags())
@@ -187,7 +184,7 @@ class Lora(LoRa):
                     if ack_final:
                         self.flag=1
                         print(self.flag)
-                        print("ultimo paquete")
+                        if DEBUG_MODE: print("DEBUG: last packet")
                         time.sleep(.5)
                         self.set_mode(MODE.SLEEP)
                         print(self.frx)
@@ -219,8 +216,8 @@ class Lora(LoRa):
     def on_tx_done(self):
         global args
         if(self.env==1):
-            print("Entra en tx1 de la transmision")
-            print(self.frx)
+            if DEBUG_MODE: print("DEBUG: transmission")
+            #print(self.frx)
             self.a=1
             self.set_mode(MODE.STDBY)
             self.clear_irq_flags(TxDone=1)
@@ -247,7 +244,7 @@ class Lora(LoRa):
                 self.write_payload([ord(elem) for elem in packet])
                 self.flagn +=1
                 if DEBUG_MODE: self.debug_printpacket("re-sending packet: ", packet)
-                if DEBUG_MODE: print("From rasnd Flag Number: ", self.flagn)
+                if DEBUG_MODE: print("From rasp Flag Number: ", self.flagn)
                 self.sent += 1
                 self.retrans += 1
                 if(self.flagn==3):   #AM: Para no dejar el socket colgado se pone un reenvio de 3 paquetes
@@ -267,10 +264,6 @@ class Lora(LoRa):
                 if DEBUG_MODE: print("Payload to send", self.text)
                 self.payload = self.payload[self.PAYLOAD_SIZE:]    # Shifting the input string
                 if DEBUG_MODE: print("Payload left", self.payload)
-                    # AM: Checking if it's the last ACK
-                    #if last_pkt:
-                    #    self.dentro= True
-                    # Checking if this is the last packet
                 if (len(self.text) == self.PAYLOAD_SIZE) and (len(self.payload) > 0): 
                     self.last_pkt = False
                 else: 
@@ -287,7 +280,7 @@ class Lora(LoRa):
                 signal.alarm(120)
                 self.frx=0
         elif(self.env==0):
-            print("Entra en tx1")
+            if DEBUG_MODE: print("DEBUG: Receiving")
             self.a=1
 
     def on_cad_done(self):
@@ -311,7 +304,7 @@ class Lora(LoRa):
         print(self.get_irq_flags())
 
     def recv(self,MY_ADDR,SND_ADDR):
-        print("Entra en Recv 1")
+        if DEBUG_MODE: print("DEBUG: Reception Function")
         self.set_mode(MODE.SLEEP)
         self.set_dio_mapping([0] * 6)
         self.flag=0
@@ -320,27 +313,25 @@ class Lora(LoRa):
         self.SND_ADDR = SND_ADDR[8:]
         address_check = b""
         self.fpacket=True
+        self.source_addr=b""
         # Buffer storing the received data to be returned
         self.rcvd_data = b""
         self.next_acknum = 0
         self.reset_ptr_rx()
         self.set_mode(MODE.RXCONT)
         self.env=0
-        print("Entra aqui en recv 2")
         while (self.flag==0):
-            #print("Entra")
-            sys.stdout.write("Entra en el while")
+            #sys.stdout.write("Entra en el while")
             time.sleep(.5)
         return self.rcvd_data, self.source_addr
 
     def trans(self,payload,SND_ADDR,RCV_ADDR):
-        print("Entra a transmitir")
+        if DEBUG_MODE: print("DEBUG: Transmission Function")
         self.env=1
         self.set_mode(MODE.SLEEP)
         self.set_dio_mapping([1,0,0,0,0,0])
-        print("Entra en Send 1")
         global args
-        signal.signal(signal.SIGALRM, self.handler)
+        #signal.signal(signal.SIGALRM, self.handler)
         self.flag=0
         self.payload=payload
         self.rec_add = RCV_ADDR
@@ -373,9 +364,6 @@ class Lora(LoRa):
             self.last_pkt = True
             self.bandera = 0 
         packet = self.make_packet(self.snd_add, self.rec_add, self.seqnum, self.acknum, DATA_PACKET, self.last_pkt, self.text)
-        print("Entra en Send 2")
-        print(len(packet))
-        print(type(packet))
         self.write_payload([ord(elem) for elem in packet])
         if DEBUG_MODE: self.debug_printpacket("sending 1st", packet)
         self.send_time = time.time()
@@ -383,13 +371,13 @@ class Lora(LoRa):
         self.set_mode(MODE.TX)
         self.sent += 1
         self.dentro=False
-        time.sleep(1)
+        #time.sleep(1)
         #self.clear_irq_flags(TxDone=1)
-        signal.alarm(120)
+        #signal.alarm(600)
         print("Entra en send 3")
         while(True):
-            print("Entra al while")
-            time.sleep(1)
+            #print("Entra al while")
+            time.sleep(.5)
             if(self.flag==1):
                 time.sleep(1)
                 self.set_mode(MODE.STDBY)
