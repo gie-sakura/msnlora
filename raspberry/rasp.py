@@ -13,7 +13,7 @@ DEBUG_MODE = True
 socket.setdefaulttimeout(10)
 BOARD.setup()
 
-parser = LoRaArgumentParser("A simple LoRa beacon")
+parser = LoRaArgumentParser("Stop and Wait LoRa Protocol")
 parser.add_argument('--single', '-S', dest='single', default=False, action="store_true", help="Single transmission")
 parser.add_argument('--wait', '-w', dest='wait', default=1, action="store", type=float, help="Waiting time between transmissions (default is 0s)")
 
@@ -21,6 +21,9 @@ DATA_PACKET = False
 ANY_ADDR = b'FFFFFFFF'
 # BEGIN: Utility functions
 #
+
+class TimedOutExc(Exception):
+    pass
 
 class Lora(LoRa):
 
@@ -42,7 +45,7 @@ class Lora(LoRa):
 
     def handler(self,signum, frame):
         
-        raise Exception("Exception")
+        raise TimedOutExc()
 
     def make_packet(self,source_addr, dest_addr, seqnum, acknum, is_a_ack, last_pkt, content):
         flags = 0
@@ -75,6 +78,7 @@ class Lora(LoRa):
 
     def on_rx_done(self):
         #signal.alarm(10)
+        print("rec")
         BOARD.led_on()
         if(self.env==0):
             if DEBUG_MODE: print("DEBUG: Reception")
@@ -162,6 +166,7 @@ class Lora(LoRa):
                     self.set_mode(MODE.SLEEP)
                     self.flag=1
         elif(self.env==1):
+            signal.alarm(10)
             if DEBUG_MODE: print("DEBUG: Waiting for ACK")
             if DEBUG_MODE: print("SND_ADDR", self.snd_add)
             #print("\nRxDone")
@@ -203,11 +208,13 @@ class Lora(LoRa):
                         self.reset_ptr_rx()
                         BOARD.led_off()
                         self.set_mode(MODE.RXCONT)
-                except socket.timeout:
+                except TimedOutExc as e:
+                    signal.alarm(0)
                     print("Entra a la excepcion")
                     time.sleep(.5)
                     self.frx=2
-                    signal.alarm(120)
+                    print(self.frx)
+                    self.frec=1
                     self.set_mode(MODE.SLEEP)
                     self.set_dio_mapping([1,0,0,0,0,0])
                     self.reset_ptr_rx()
@@ -305,6 +312,7 @@ class Lora(LoRa):
 
     def recv(self,MY_ADDR,SND_ADDR):
         if DEBUG_MODE: print("DEBUG: Reception Function")
+        self.frec=0
         self.set_mode(MODE.SLEEP)
         self.set_dio_mapping([0] * 6)
         self.flag=0
@@ -327,11 +335,12 @@ class Lora(LoRa):
 
     def trans(self,payload,SND_ADDR,RCV_ADDR):
         if DEBUG_MODE: print("DEBUG: Transmission Function")
+        self.frec=0
         self.env=1
         self.set_mode(MODE.SLEEP)
         self.set_dio_mapping([1,0,0,0,0,0])
         global args
-        #signal.signal(signal.SIGALRM, self.handler)
+        signal.signal(signal.SIGALRM, self.handler)
         self.flag=0
         self.payload=payload
         self.rec_add = RCV_ADDR
@@ -373,9 +382,10 @@ class Lora(LoRa):
         self.dentro=False
         #time.sleep(1)
         #self.clear_irq_flags(TxDone=1)
-        #signal.alarm(600)
         print("Entra en send 3")
         while(True):
+            if self.frec==1:
+                signal.alarm(10)
             #print("Entra al while")
             time.sleep(.5)
             if(self.flag==1):
