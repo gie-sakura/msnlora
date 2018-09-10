@@ -61,7 +61,7 @@ def unpack(packet):
     
     return TM, TP, content    
 
-def reconocimiento(the_sock,tbs,message):
+def reconocimiento(the_sock,tbs,message,flag_broadcast):
     # AM: We send a broadcast message looking for the user
     mensaje =""
     content= ""
@@ -98,8 +98,9 @@ def reconocimiento(the_sock,tbs,message):
             mensaje=b""
             m_broadcast = 1
             break
-        elif(tbs==b'FFFFFFFraspberry'):
-            dest_lora_address=tbs
+        elif(flag_broadcast==2):#When is a message via telegram
+            dest_lora_address=b'FFFFFFFraspberry'
+            if DEBUG_MODE: print("DEBUG: Searching Via Telegram to: ", tbs)
         if DEBUG_MODE: print("DEBUG: Searching: ", cuenta)
         sent,retrans,nsent = swlp.tsend(content, the_sock, my_lora_address, dest_lora_address)
         mensaje,address = swlp.trecvcontrol(the_sock, my_lora_address, dest_lora_address)
@@ -130,11 +131,7 @@ def run(post_body,socket,mac,sender,flag_broadcast):
     start_search_time = utime.ticks_ms()
     if(flag_broadcast==1):
         receiver = "broadcast"
-    if(flag_broadcast==2):#When is a message via telegram
-        message=sender+","+receiver
-        receiver= b'FFFFFFFraspberry'
-        if DEBUG_MODE: print("DEBUG: Data to raspberry: ", message)
-    dest_lora_address, m_broadcast = reconocimiento(socket,receiver,message)
+    dest_lora_address, m_broadcast = reconocimiento(socket,receiver,message,flag_broadcast)
     search_time = utime.ticks_ms() - start_search_time
     dest_lora_address2 = dest_lora_address[2:]
     if DEBUG_MODE: print("DEBUG: dest lora address: ", dest_lora_address2)
@@ -167,3 +164,15 @@ def run(post_body,socket,mac,sender,flag_broadcast):
         r_content = "<h1>Destination Not found\n"
         r_content += "<h1><a href='/'>Back To Home</a></h1>\n"
     return r_content
+
+def broadcast(message):
+    tabla=BaseDatos()
+    tabla.broadcastm(message)
+    print("received")
+
+def consultat(user):
+    tabla=BaseDatos()
+    bandera=tabla.consultaControl(user)
+    print("Consulta")
+    #bandera=1
+    return bandera

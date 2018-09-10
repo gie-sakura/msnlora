@@ -129,23 +129,9 @@ class Server:
 
      return h
 
- def _wait_for_connections(self,s_left,addr):
-     print("Got connection from:", addr)
-     ufun.set_led_to(GREEN)
-     data = s_left.recv(1024) #receive data from client
-     treq = bytes.decode(data) #decode it to treq
+ def _wait_for_connections(self,s_left,addr,treq):
      #determine request method  (HEAD and GET are supported) (PM: added support to POST )
      request_method = treq.split(' ')[0]
-     print("DEBUG: self.flag_null", self.flag_null)
-     if(self.flag_null==0):#AM: En caso de que sea peticion nula, la cambia a una GET, no implementado
-        treq2 = treq
-        request_method2 = treq2.split(' ')[0]
-        print("Data in case of Null Method")
-        self.flag_null = 1
-     if(data==''):
-        treq = treq2
-        request_method = request_method2
-        print("Changing data Because is null method")
      print ("Method: ", request_method)
      print ("Full HTTP message: -->")
      print (treq)
@@ -270,10 +256,14 @@ class Server:
     data=""
     print("Got connection from:", addr)
     data = s_left.recv(1024) #receive data from client
-    treq = bytes.decode(data)
+    if DEBUG_MODE: print("DEBUG: Data received:",data)
+    if(data==b""):
+        print("Null Method, Discarding")
+    else:
+        treq = bytes.decode(data)
+        self._wait_for_connections(s_left,addr,treq)
 
-
- def conexion(self): #Funcion encargada de coordinar uso de los sockets
+ def conexion(self): #Function in charge of the coordination of sockets
     ANY_ADDR = b'FFFFFFFFFFFFFFFF'
     while True:
         s_read, _, _ = select.select([self.socket, self.s_right], [], [])          
@@ -282,7 +272,7 @@ class Server:
                 # reading data from the HTTP channel
                 print("DEBUG: in connections_handler: reading data from the HTTP channel")
                 s_left, addr = self.socket.accept()
-                self._wait_for_connections(s_left,addr)
+                self.checking_connection(s_left,addr)
             elif a == self.s_right:
                 # reading data from the LORA channel using swlpv3
                 print("DEBUG: reading data from the LORA channel using swlpv3")
@@ -295,23 +285,30 @@ class Server:
 ###################################################################################
 
 def LoRaRec(data,socket,source_address):
+    bandera=0
     mensaje = b""
+    tabla=BaseDatos()
     my_lora_address = binascii.hexlify(network.LoRa().mac())
     print("DEBUG: Content in reception LoRa",data)
     if DEBUG_MODE: print("DEBUG: Source Address in LoRaRec ", source_address)
     if (source_address == ANY_ADDR):
         content2 = str(data)
         IPlora,usuario = content2.split(",")
+        if(IPlora=="b'FFFFFFFraspbsend'") or (IPlora==b'FFFFFFFraspberry'):
+            print("entra a la ip de la raspberry")
         print("IP Lora: "+str(IPlora))
         lenght = len(usuario)
         userf = usuario[:lenght-1]
         if(userf=="broadcast"):
             message_broadcast = str(IPlora[2:])
+            tabla=BaseDatos()
             if DEBUG_MODE: print("DEBUG: Message Broadcast received",message_broadcast)
-            tabla.broadcast_message(message_broadcast)
+            posthandler.broadcast(message_broadcast)
+            #messageb=tabla.broadcast_message(message_broadcast)
         IPloraf = IPlora[4:]
         if DEBUG_MODE: print("DEBUG: User ", userf)
-        bandera=tabla.consultaControl(userf)
+        bandera=posthandler.consultat(userf)
+        #bandera=tabla.consultaControl(userf)
         if DEBUG_MODE: print("DEBUG: Flag ", bandera)
         if bandera == 1:
             if DEBUG_MODE: print("DEBUG: Lora Address ", IPloraf)
