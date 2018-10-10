@@ -7,20 +7,20 @@ class Database:
         self.dbname = dbname
         self.conn = sqlite3.connect(dbname, check_same_thread=False)
 
-    def setup(self):
+    def setup(self):#Function to create the database
         stmt = "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, username TEXT)"
         self.conn.execute(stmt)
         self.conn.commit()
         if DEBUG_MODE: print("DEBUG: Database Created")
 
-    def adduser(self,chat_id,user):
+    def adduser(self,chat_id,user):#Function to add a new user
         stmt = "INSERT INTO users (id,username) VALUES (?,?)"
         args = (chat_id,user)
         self.conn.execute(stmt,args)
         self.conn.commit()
         if DEBUG_MODE: print("DEBUG: User added in the Database")
 
-    def getuser(self,user):
+    def getuser(self,user):#Function to get the info of a user
         cur=self.conn.cursor()
         data=self.getall()
         stmt = "SELECT id FROM users WHERE username=?"
@@ -35,7 +35,7 @@ class Database:
         test = cur.fetchall()
         return test
 
-    def checkuser(self,chat_id,user):
+    def checkuser(self,chat_id,user):#Function to check for a user
         flag=0
         cur=self.conn.cursor()
         stmt = "SELECT * from users where id = ?"

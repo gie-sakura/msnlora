@@ -11,12 +11,12 @@ from time import time    # Current time
 import ubinascii
 import binascii
 import posthandler # PM: code to be executed to handle a POST
-import swlp #AM: Libreria transporte no recursiva
-from tabla import BaseDatos #AM: Libreria Bases de Usuarios y mensajes
-from network import LoRa #AM: Libreria de LoRa
+import swlp #AM: LoRa Protocol
+from tabla import BaseDatos #AM: Management of user and messages
+from network import LoRa #AM: LoRa
 import network
-import select #AM: Libreria para cambiar entre sockets
-import ufun #AM: Libreria para manejar los Leds
+import select #AM: Used to change between the sockets
+import ufun #AM: Used to handle the leds in the lopy
 import machine
 from network import WLAN
 from machine import SD
@@ -35,7 +35,7 @@ WEB_PAGES_HOME_DIR = '/flash' # Directory where webpage files are stored
 ANY_ADDR = b'FFFFFFFF'
 flag = 0
 DEBUG_MODE = True
-#LoRA parameters
+#LoRA parameters to work with raspberry
 freq=869000000                  # def.: frequency=868000000         
 tx_pow=14                       # def.: tx_power=14                 
 band=LoRa.BW_125KHZ             # def.: bandwidth=LoRa.868000000    
@@ -292,39 +292,38 @@ def LoRaRec(data,socket,source_address):
     print("DEBUG: Content in reception LoRa",data)
     if DEBUG_MODE: print("DEBUG: Source Address in LoRaRec ", source_address)
     if (source_address == ANY_ADDR):
-        content2 = str(data)
-        IPlora,usuario = content2.split(",")
+        content2 = str(data) #Capturing the data, and changing the format
+        IPlora,user_raw = content2.split(",")
         if(IPlora=="b'FFFFFFFraspbsend'") or (IPlora==b'FFFFFFFraspberry'):
-            print("entra a la ip de la raspberry")
-        print("IP Lora: "+str(IPlora))
-        lenght = len(usuario)
-        userf = usuario[:lenght-1]
-        if(userf=="broadcast"):
+            if DEBUG_MODE: print("DEBUG: It's the raspberry IP")
+        if DEBUG_MODE: print("DEBUG: IP Lora: ",str(IPlora))
+        lenght = len(user_raw)
+        userf = user_raw[:lenght-1]
+        if(userf=="broadcast"): #Message to all users
             message_broadcast = str(IPlora[2:])
             tabla=BaseDatos()
             if DEBUG_MODE: print("DEBUG: Message Broadcast received",message_broadcast)
-            posthandler.broadcast(message_broadcast)
-            #messageb=tabla.broadcast_message(message_broadcast)
+            posthandler.broadcast(message_broadcast) #Function to save the broadcast message
         IPloraf = IPlora[4:]
         if DEBUG_MODE: print("DEBUG: User ", userf)
-        bandera=posthandler.consultat(userf)
+        bandera=posthandler.consultat(userf) #Checking if the user is in the database
         #bandera=tabla.consultaControl(userf)
         if DEBUG_MODE: print("DEBUG: Flag ", bandera)
-        if bandera == 1:
+        if bandera == 1: #The user is in the database, I'm going to respond
             if DEBUG_MODE: print("DEBUG: Lora Address ", IPloraf)
-            sent, retrans,sent = swlp.tsend(my_lora_address, socket, my_lora_address, IPloraf)
+            sent, retrans,sent = swlp.tsend(my_lora_address, socket, my_lora_address, IPloraf)#Function to send a LoRa Message using the protocol
     elif(source_address== my_lora_address[8:]): #The message is for me, I'm going to save it
-        mensaje = data
-        if DEBUG_MODE: print("DEBUG: message in server", mensaje)
-        if(mensaje !=b""):
-            mensajet = str(mensaje)
-            idEmisor, mensajef,usuario = mensajet.split(",")
+        message_raw = data
+        if DEBUG_MODE: print("DEBUG: message in server", message_raw)
+        if(message_raw !=b""):
+            mensajet = str(message_raw)
+            idEmisor, messagef,user_final = mensajet.split(",")
             print("Sender: "+str(idEmisor[1:]))
-            print("Message: "+str(mensajef))
-            print("User: "+str(usuario))
-            lenght = len(usuario)
-            userf = usuario[:lenght-1]
-            tabla.ingreso(idEmisor[2:],userf,mensajef)
+            print("Message: "+str(messagef))
+            print("User: "+str(user_final))
+            lenght = len(user_final)
+            userf = user_final[:lenght-1]
+            tabla.ingreso(idEmisor[2:],userf,mensajef)#Function to save the message in the database
 
 ################################################################################################################################
 # Enabling garbage collection

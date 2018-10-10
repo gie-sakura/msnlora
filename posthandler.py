@@ -131,7 +131,7 @@ def run(post_body,socket,mac,sender,flag_broadcast):
     start_search_time = utime.ticks_ms()
     if(flag_broadcast==1):
         receiver = "broadcast"
-    dest_lora_address, m_broadcast = reconocimiento(socket,receiver,message,flag_broadcast)
+    dest_lora_address, m_broadcast = reconocimiento(socket,receiver,message,flag_broadcast)#Function to look for the user
     search_time = utime.ticks_ms() - start_search_time
     dest_lora_address2 = dest_lora_address[2:]
     if DEBUG_MODE: print("DEBUG: dest lora address: ", dest_lora_address2)
@@ -165,7 +165,7 @@ def run(post_body,socket,mac,sender,flag_broadcast):
         r_content += "<h1><a href='/'>Back To Home</a></h1>\n"
     return r_content
 
-def broadcast(message):
+def broadcast(message):#Function to save a broadcast message
     tabla=BaseDatos()
     tabla.broadcastm(message)
     print("received")

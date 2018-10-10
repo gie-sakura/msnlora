@@ -27,7 +27,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 db.setup()
 
 
-def send(msg, chat_id, token=my_token):
+def send(msg, chat_id, token=my_token):#Function to send a message to the bot
 	bot = telegram.Bot(token=token)
 	bot.sendMessage(chat_id=chat_id, text=msg)
 
@@ -35,11 +35,11 @@ def start(bot, update):
 	bot.send_message(chat_id=update.message.chat_id, text="Welcome to the messenger lopy bot")
 	bot.send_message(chat_id=update.message.chat_id, text="Please, insert your phone Number or username with the orden /register")
 
-def register(bot,update, args):
+def register(bot,update, args):#Funtion to register a user in the database
 	user = ' '.join(args)
 	user=user.lower()
 	idUser = update.message.chat_id
-	flag = db.checkuser(idUser,user)
+	flag = db.checkuser(idUser,user)#Checking the user in the database
 	if flag ==1:
 		bot.send_message(chat_id=idUser, text="Updated, your username now is @"+user)
 	elif(flag==2):
@@ -51,7 +51,7 @@ def register(bot,update, args):
 	database = db.getall()
 	if DEBUG_MODE: print("DEBUG: Database",database)
 
-def send_to(bot,update, args):
+def send_to(bot,update, args):#Function to look for a user through LoRa
 	idUser = update.message.chat_id
 	user = ' '.join(args)
 	if(user!=""):
@@ -67,7 +67,7 @@ def send_to(bot,update, args):
 	else:
 		bot.send_message(chat_id=idUser, text="Sorry, you have to tell me an username")
 
-def msg(bot,update,args):
+def msg(bot,update,args):#Function to send a message through LoRa
 	message=' '.join(args)
 	sender=db.getusername(update.message.chat_id)
 	receiver,source_addr2=db.getinfo(update.message.chat_id)
@@ -104,7 +104,7 @@ print("All Set")
 while True:
 	try:
 		print("Listening")
-		data,source_addr = rasp.recv(my_lora_address, ANY_ADDR)
+		data,source_addr = rasp.recv(my_lora_address, ANY_ADDR)#Function to receive the messages
 		if DEBUG_MODE: print("Data Received", data)
 		#data=data[0] #Changing type from tuple to string
 		if DEBUG_MODE: print("Data After", data)
@@ -114,19 +114,19 @@ while True:
 			if DEBUG_MODE: print("DEBUG: IPlora",IPloraf)
 			if DEBUG_MODE: print("DEBUG: source_addr",source_addr)
 			if DEBUG_MODE: print("DEBUG: User",user)
-			chat=db.getuser(user)
+			chat=db.getuser(user)#Checking if the user is in the database
 			if DEBUG_MODE: print("DEBUG: result",chat)
-			if(chat!=None):
+			if(chat!=None):#If the message is valid, here we go!
 				chat_id=''.join(map(str, chat))
 				if DEBUG_MODE: print("DEBUG: chat_id",chat_id)
-				sent, retrans,sent = rasp.trans(my_lora_address, my_lora_address,IPloraf)
+				sent, retrans,sent = rasp.trans(my_lora_address, my_lora_address,IPloraf)#Responding to the lopy
 				print("Confirmation Message Sent")
-				msg,source_addr2 = rasp.recv(my_lora_address,source_addr)
+				msg,source_addr2 = rasp.recv(my_lora_address,source_addr)#Receiving the full message
 				if DEBUG_MODE: print("DEBUG: msg",msg)
 				#msg=data2[0]
 				idEmisor, mensajef,usuario = msg.split(",")
 				msg1="Message LoRa from "+"@"+idEmisor+":"
-				send(msg1,chat_id,my_token)
+				send(msg1,chat_id,my_token)#Sending the message to the telegram user
 				send(mensajef,chat_id,my_token)
 			else:
 				if DEBUG_MODE: print("DEBUG: User",user)
