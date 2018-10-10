@@ -1,12 +1,14 @@
 # Messenger LoRa
 
-Low-power system for isolated communities based on the LoRa protocol to provide a messaging system through the creation of a user who can send a message only if the destination user is also registered.
+Low-power system to connect isolated communities based on the LoRa protocol to provide a messaging system to registered users and a gateway to a telegram user using a raspberry Pi connected to Internet.
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes in your lopy and raspberry.
 
 ### Prerequisites
+
+####In the lopy device
 
 This is the basic information required to set up a suitable development environment for a Pycom device, in this case the LoPys.
 
@@ -23,6 +25,20 @@ $ python3 -m pip install mpy-repl-tool
 ```
 
 For more information you can check the full [documentation](https://docs.pycom.io/)
+
+####In the raspberry
+
+First you need to install or upgrade python-telegram-bot with:
+
+```
+$ pip install python-telegram-bot --upgrade
+```
+Or you can install from source with:
+```
+$ git clone https://github.com/python-telegram-bot/python-telegram-bot --recursive
+$ cd python-telegram-bot
+$ python setup.py install
+```
 
 ### Installing
 
@@ -42,7 +58,7 @@ $ python3 -m there -i
 ```
 ## Deployment
 
-One in the REPL promt import the server file
+Once in the REPL promt import the server file
 ```
 import server
 ```
