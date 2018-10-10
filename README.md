@@ -1,6 +1,6 @@
 # Messenger LoRa
 
-Low-power system to connect isolated communities based on the LoRa protocol to provide a messaging system to registered users and a gateway to a telegram user using a raspberry Pi connected to Internet.
+Low-power system to connect isolated communities based on the LoRa protocol to provide a messaging system to registered users and a gateway to a telegram user using a bot installed in a raspberry Pi with the [LoRa Expansion board](https://es.pinout.xyz/pinout/uputronics_lora_expansion_board), and connected to Internet.
 
 ## Getting Started
 
@@ -42,11 +42,11 @@ $ python setup.py install
 
 ### Installing
 
-Now you can download and install the project in your device.
+Now you can download and install the project in your devices.
 
-First download the .ZIP and extract it in your machine.
+First download the .ZIP and extract it in your machine and copy the rasp.py folder to your raspberry.
 
-Installing the repository in the LoPy device.
+To install the repository in the LoPy device.
 
 On the project's location type:
 ```
@@ -66,6 +66,11 @@ Connect to the network and type the address
 ```
 192.168.4.1
 ```
+In the raspberry's project folder type
+```
+python botrasp.py
+```
+Check this [information](https://core.telegram.org/bots) about how to get your App token
 ## Authors
 
 * **Angélica Moreno Cárdenas**

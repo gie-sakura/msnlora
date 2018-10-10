@@ -16,7 +16,7 @@ rasp= Lora()
 db=Database()
 
 DEBUG_MODE = True
-my_token = '616951805:AAEMk8pFivwdy32d7543Z-XKv_2M5lAz7_U'
+my_token = '616951805:AAEMk8pFivwdy32d7543Z-XKv_2M5lAz7_U'#Token of the Telegram App using botfather
 ANY_ADDR = b'FFFFFFFFFFFFFFFF'
 my_lora_address=b'FFFFFFFraspberry'
 my_lora_address2=b'FFFFFFFraspbsend'
