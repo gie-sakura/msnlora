@@ -26,7 +26,7 @@ $ python3 -m pip install mpy-repl-tool
 
 For more information you can check the full [documentation](https://docs.pycom.io/)
 
-####In the raspberry
+####In the raspberry Pi
 
 First you need to install or upgrade python-telegram-bot with:
 
@@ -44,7 +44,7 @@ $ python setup.py install
 
 Now you can download and install the project in your devices.
 
-First download the .ZIP and extract it in your machine and copy the rasp.py folder to your raspberry.
+First download the .ZIP, extract it in your machine and copy the rasp.py folder to your raspberry.
 
 To install the repository in the LoPy device.
 
