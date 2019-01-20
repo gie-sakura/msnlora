@@ -167,7 +167,7 @@ def run(post_body,socket,mac,sender,flag_broadcast):
 
 def broadcast(message):#Function to save a broadcast message
     tabla=BaseDatos()
-    tabla.broadcastm(message)
+    tabla.broadcast_message(message)
     print("received")
 
 def consultat(user):

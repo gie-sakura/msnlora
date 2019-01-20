@@ -335,9 +335,9 @@ def trecvcontrol(the_sock, MY_ADDR, SND_ADDR):
                     source_addr, dest_addr, seqnum, acknum, ack, last_pkt, check, content = unpack(packet)
                     dest_addra=str(dest_addr)
                     dest_addr2=dest_addra[2:(len(dest_addra)-1)]
-                    if DEBUG_MODE: print("DEBUG: dest_addr",dest_addr2)
+                    if DEBUG_MODE: print("DEBUG: dest_addr",dest_addra)
                     if DEBUG_MODE: print("DEBUG: MY_ADDR",MY_ADDR)
-                    if (dest_addr2==MY_ADDR):
+                    if (dest_addr==MY_ADDR):
                         if DEBUG_MODE: debug_printpacket("received packet", packet, True)
                         break
                     else: 

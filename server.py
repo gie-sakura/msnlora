@@ -323,7 +323,7 @@ def LoRaRec(data,socket,source_address):
             print("User: "+str(user_final))
             lenght = len(user_final)
             userf = user_final[:lenght-1]
-            tabla.ingreso(idEmisor[2:],userf,mensajef)#Function to save the message in the database
+            tabla.ingreso(idEmisor[2:],userf,messagef)#Function to save the message in the database
 
 ################################################################################################################################
 # Enabling garbage collection

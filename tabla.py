@@ -53,17 +53,20 @@ class BaseDatos:
 
 	def ingreso(self,Emisor,destino,Mensaje): #AM: Function to save the messages
 		print("Saving Message")
+		
+		if DEBUG_MODE: print("DEBUG: Number of Message: ", self.message_number)
+		BaseDatos.n+=1
+		if DEBUG_MODE: print("DEBUG: Number of Message: ", self.n)
 		if DEBUG_MODE: print("DEBUG: Message Database: ", self.BaseM)
 		if DEBUG_MODE: print("DEBUG: User Database: ", self.BaseU)
 		posicion=self.BaseU.index(destino)
 		if DEBUG_MODE: print("DEBUG: Position: ", posicion)
 		self.BaseM[posicion][str(self.n)+"Emisor "]=Emisor
 		self.BaseM[posicion][str(self.n)+"Mensaje "]=Mensaje
-		self.n+=1
 		if DEBUG_MODE: print("DEBUG: New Users Database: ", self.BaseU)
 		if DEBUG_MODE: print("DEBUG: New Message Database: ", self.BaseM)
 		if DEBUG_MODE: print("DEBUG: Number of Message: ", self.n)
-		self.message_number+=1
+		self.message_number=self.n
 		if(self.message_number==10):
 			print("Saving Databases")
 			x = save_backup(self.BaseU,self.BaseM)
@@ -92,8 +95,8 @@ class BaseDatos:
 			for key,val in BaseMConsulta[posicion].items(): 
 				r_content += str(val)+" , \n"
 			r_content += "\n"
-			r_content = "<h1>Broadcast Messages</h1>\n"
-			r_content = str(self.BaseB)+" , \n"
+			r_content += "<h1>Broadcast Messages</h1>\n"
+			r_content += str(self.BaseB)+" , \n"
 			r_content += "<p><a href='/'>Back to home</a></p>\n"
 		else:
 			r_content = "<h1>No Messages</h1>\n"
@@ -102,6 +105,7 @@ class BaseDatos:
 			r_content += "<h1>Broadcast Messages</h1>\n"
 			r_content += str(self.BaseB)+" , \n"
 			r_content += "<p><a href='/'>Back to home</a></p>\n"
+		if DEBUG_MODE: print("DEBUG: r_content", r_content)
 		return r_content
 
 	def broadcast_message(self,message):
